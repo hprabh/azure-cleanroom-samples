@@ -1,22 +1,16 @@
-# Multi-party collaboration <!-- omit from toc -->
+# Setting up a consortium for multi-party collaboration <!-- omit from toc -->
 
-These samples demonstrate usage of clean rooms for multi-party collaboration for the following scenarios:
-- Confidential read and write of protected data [using encrypted file storage](./README.md#sharing-data-using-encrypted-storage)
-- Confidential [ML training](./scenarios/ml-training/README.md) fine tuning a protected ML model on protected datasets using encrypted file storage.
-- Confidential [Query Analytics](./scenarios/analytics/README.md) executing audited queries on protected datasets using a standalone DB engine residing within the clean room
-
-# Come up with some heading <!-- omit from toc -->
-
-- [1. Overview](#1-overview)
-- [2. Setting up the environment (per collaborator)](#2-setting-up-the-environment-per-collaborator)
-- [3. High level execution sequence](#3-high-level-execution-sequence)
-- [4. Setup the consortium](#4-setup-the-consortium)
-  - [4.1. Member identity creation (ISV, publisher, consumer)](#41-member-identity-creation-isv-publisher-consumer)
-  - [4.4. Invite members to the consortium (ISV)](#44-invite-members-to-the-consortium-isv)
-  - [4.5. Join the consortium (publisher, consumer)](#45-join-the-consortium-publisher-consumer)
-- [5. Protecting data shared for collaboration](#5-protecting-data-shared-for-collaboration)
-  - [5.1. KEK-DEK based encryption approach](#51-kek-dek-based-encryption-approach)
-  - [5.2. Encrypt and upload data](#52-encrypt-and-upload-data)
+- [1. Preparing samples environment inside a docker container](#1-preparing-samples-environment-inside-a-docker-container)
+  - [1.1. Prerequisites](#11-prerequisites)
+  - [1.2. Generating the docker image](#12-generating-the-docker-image)
+  - [1.3. Bringing up the environment](#13-bringing-up-the-environment)
+- [4. High level execution sequence](#4-high-level-execution-sequence)
+- [5. Setup the consortium](#5-setup-the-consortium)
+  - [5.1. Member identity creation](#51-member-identity-creation)
+  - [5.2. Creating the consortium](#52-creating-the-consortium)
+- [6. Publisher: Preparing encrypted datasets](#6-publisher-preparing-encrypted-datasets)
+  - [6.1. KEK-DEK based encryption approach](#61-kek-dek-based-encryption-approach)
+  - [6.2. Encrypt and upload data](#62-encrypt-and-upload-data)
 - [7. Publisher: Setting up log collection](#7-publisher-setting-up-log-collection)
 - [8. Share publisher clean room configuration with consumer](#8-share-publisher-clean-room-configuration-with-consumer)
 - [9. Consumer: Output preparation and application configuration](#9-consumer-output-preparation-and-application-configuration)
@@ -43,105 +37,38 @@ These samples demonstrate usage of clean rooms for multi-party collaboration for
 - [18. Next Steps](#18-next-steps)
 
 
-# 1. Overview
-All the scenarios demonstrate a collaboration where 3 parties come together:
-  - A publisher (party 1) having dataset(s) meant to be consumed via the collaboration.
-  - A consumer (party 2) that wants to run an application that consumes the data shared by the publisher. This party might also bring in its own dataset(s) into the collaboration. The consumer requires any confidential output generated from the clean room should only be accessible by the consumer.
-  - An ISV (party 3) hosting the confidential clean room infrastructure.
+# 1. Preparing samples environment inside a docker container
+## 1.1. Prerequisites
+To set this infrastructure up, we will need the following tools to be installed prior to running the samples.
+1. An Azure subscription with adequate permissions to create resources and manage permissions on these resources.
+2. Docker installed locally. Installation instructions [here](https://docs.docker.com/engine/install/).
 
-In all cases, a confidential clean room (CCR) will be executed to run the consumer's application while protecting the privacy of the data that is ingested for both the publisher and the consumer, as well as protected any output for the consumer. The clean room can be deployed by either of the 2 parties or the ISV without any impact on the zero-trust promise architecture.
-
-Capabilities demonstrated:
-- How to prepare encrypted data as input that can be read only from a clean room
-- How to get encrypted data as output from  the clean room that can only read by one of the parties
-- How to exchange information about the encrypted data sets and code application between the collaborating parties
-- How to create a governance contract capturing what data is exposed and what code runs in the clean room
-- How to agree upon the ARM template and CCE policy that will be used for the clean room deployment
-- How to enable clean room execution logs collection and inspect the same in a confidential manner
-
-# 2. Setting up the environment (per collaborator)
-All the involved parties need to bring up a local environment to participate in the collaboration. This can be achieved either by launching a pre-configured docker container (preferred) or by executing the configuration steps by hand.
-
-<details><summary>Using a pre-configured docker container</summary>
-<br>
-To set this infrastructure up, we will need Docker installed locally. Installation instructions [here](https://docs.docker.com/engine/install/).
-
-<br>
-
-  ```powershell
-  # Set name to be associated with this party for the collaboration.
-  $memberName = "<friendly name>"
-
-  # Create a new resource group for  ARM artefacts generated on executing the samples.
-  $resourceGroup = "$memberName-$((New-Guid).ToString().Substring(0, 8))"
-
-  # Build the docker image and create a pre-configured container tied to the member in question.
-  docker image build -t "azure-cleanroom-samples" -f ./docker/Dockerfile.multi-party-collab "."
-
-  docker create `
-    --env MEMBER_NAME=$memberName `
-    --env RESOURCE_GROUP=$resourceGroup `
-    -v "//var/run/docker.sock:/var/run/docker.sock" `
-    -v "$pwd/demo-resources/$memberName.public:/home/samples/demo-resources.public" `
-    -v "$pwd/demo-resources/$memberName.private:/home/samples/demo-resources.private" `
-    --name "$memberName-shell" `
-    -it "azure-cleanroom-samples"
-
-  docker container start -a -i "$memberName-shell"
-  ```
-</details>
-<br>
-<details><summary>Executing the configuration steps by hand</summary>
-<br>
-
-We recommend running the following steps in PowerShell on WSL using Ubuntu 22.04.
-- Instructions for setting up WSL can be found [here](https://learn.microsoft.com/en-us/windows/wsl/install).
-- To install PowerShell on WSL, follow the instructions [here](https://learn.microsoft.com/en-us/powershell/scripting/install/install-ubuntu?view=powershell-7.3).
-
-To set this infrastructure up, we will need the following tools to be installed prior to running the setup scripts.
-1. Azure CLI version >= 2.57. Installation instructions [here](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli-linux).
-2. You need Docker for Linux installed locally. Installation instructions [here](https://docs.docker.com/engine/installation/#supported-platforms).
-3. Confidential containers Azure CLI extension, version >= 0.3.5. You can install this extension using ```az extension add --name confcom -y```. You can check the version of the extension using ```az extension show --name confcom```. Learn about it [here](https://learn.microsoft.com/en-us/cli/azure/confcom?view=azure-cli-latest).
-4. Managed CCF Azure CLI extension. You can install this extension using ```az extension add --name managedccfs -y```.
-5. azcopy versions >= 10.25.0. Installation instructions [here](https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10).
-6. openssl - Download instructions for Linux [here](https://www.openssl.org/source/).
-7. jq - Download / install instructions for Linux [here](https://jqlang.github.io/jq/download/).
-8. Add the CleanRoom Azure CLI extension using:
-    ```powershell
-    az extension add --source https://cleanroomazcli.blob.core.windows.net/azcli/cleanroom-0.0.3-py2.py3-none-any.whl -y --allow-preview true
-    ```
-
-</details>
-<br>
-
-> [!NOTE]
-> An Azure subscription with adequate permissions to create resources and manage permissions on these resources is required for executing all the samples.
-
-Once the environment is setup, ensure that you are logged into Azure, set the subscription (if required) and create the resource group for executing the samples.
+## 1.2. Generating the docker image
 ```powershell
-# Login to Azure.
-az login
-
-# Set active subscription (optional).
-az account set --subscription "<subname>"
-
-az group create --name $env:RESOURCE_GROUP --location westus
+docker image build -t azure-cleanroom-samples -f ./docker/Dockerfile.multi-party-collab "."
 ```
 
-# 3. High level execution sequence
-Before we begin below gives the overall flow of execution that happens in this sample. It gives a high level perspective that might be helpful to keep in mind as you run through the steps.
+## 1.3. Bringing up the environment
+
+<details>
+<summary>Click to expand</summary>
+
+This is the content of the collapsible section. You can include any Markdown-formatted text, lists, or code here.
+
+</details>
+
+# 4. High level execution sequence
+Before we begin below gives the overall flow of execution that happens in this sample. It gives a high level perspective that might be helpful to keep in mind as you run thru the steps.
 ```mermaid
 sequenceDiagram
-    title Collaboration flow
-    participant m2 as ISV
+    title Overall flow
     participant m1 as Publisher
     participant m0 as Consumer
     participant CCF as Clean Room Governance<br>(CCF instance)
-    participant CACI as Clean Room<br> (C-ACI instance)
+    participant CACI as Clean Room<br> (CACI instance)
 
-    m2->>CCF: Creates consortium
+    m0->>CCF: Creates consortium
     m1->>CCF: Joins consortium
-    m0->>CCF: Joins consortium
     m1->>m1: Prepares datasets
     m1->>m1: Setup log collection
     m0->>m0: Prepares application and datasets
@@ -153,7 +80,7 @@ sequenceDiagram
     m1->>CCF: Accepts enable logging
     m0->>m0: Configure access to resources by clean room
     m1->>m1: Configures access to resources by clean room
-    m2->>CACI: Deploys clean room
+    m0->>CACI: Deploys clean room
     CACI->>CCF: Check execution consent
     CACI->>CCF: Get tokens for Azure resource access
     CACI->>CACI: Access secrets in Key Vault
@@ -162,63 +89,24 @@ sequenceDiagram
     m0->>CACI: Waits for result
     m1->>m0: Shares application logs
 ```
-<br>
+
 Once the clean room is deployed the key components involved during execution are shown below:
 
 ![alt text](./assets/encrypted-storage-layout.png)
 
 > [!NOTE]
-> The steps henceforth assume that you are working in the `/home/samples` directory of the docker container and all commands are executed relative to that.
+> The steps henceforth assume that you are working in the `/home/samples` directory and all commands are executed relative to that.
 
-# 4. Setup the consortium
-This collaboration between the publisher and the consumer is realized by creating a [consortium in CCF](https://microsoft.github.io/CCF/main/overview/what_is_ccf.html) which runs a [clean room governance service](../../src/governance/README.md) where both the publisher and consumer become the participating members. Each CCF consortium member is identified by a public-key certificate used for client authentication and command signing. 
+# 5. Setup the consortium
+This collaboration between the publishers and the consumers is realized by creating a [consortium in CCF](https://microsoft.github.io/CCF/main/overview/what_is_ccf.html) which runs a [clean room governance service](../../src/governance/README.md) where all the parties become participating members. Each CCF consortium member is identified by a public-key certificate used for client authentication and command signing. So first, the identity public and private key pairs for the members need be created.
 
-As the first step of the collaboration, a CCF instance needs to be created with the above members. From a confidentiality perspective any of the collaborators or the ISV can create the CCF instance without affecting the zero-trust assurances. In these samples, we assume that it was agreed upon that the ISV will host the CCF instance. The ISV would create the CCF instance and then invite the publisher and consumer as members into the consortium.
-
-```mermaid
-sequenceDiagram
-    title Consortium creation flow
-    participant m2 as ISV
-    participant m1 as Publisher
-    participant m0 as Consumer
-    participant CCF as CCF instance
-
-    m2->>CCF: Create mCCF instance
-    CCF-->>m2: CCF created
-    m2->>CCF: Activate membership
-    Note over CCF: ISV active
-    m2->>CCF: Deploy governance service
-    CCF-->>m2: State: Service deployed
-    m1->>m2: Share publisher identity cert
-    m2->>CCF: Propose adding publisher as member
-    CCF-->>m2: Proposal ID
-    m2->>CCF: Vote for Proposal ID
-    Note over CCF: Publisher accepted
-    CCF-->>m2: State: Accepted
-    m0->>m2: Share consumer identity cert
-    m2->>CCF: Propose adding consumer as member
-    CCF-->>m2: Proposal ID
-    m2->>CCF: Vote for Proposal ID
-    Note over CCF: Consumer accepted
-    CCF-->>m2: State: Accepted
-    m2->>m1: Share ccfEndpoint URL eg.<br>https://<name>.confidential-ledger.azure.com
-    m2->>m0: Share ccfEndpoint URL eg.<br>https://<name>.confidential-ledger.azure.com
-    m1->>CCF: Verifies state of the consortium
-    m1->>CCF: Activate membership
-    Note over CCF: Publisher active
-    m0->>CCF: Verifies state of the consortium
-    m0->>CCF: Activate membership
-    Note over CCF: Consumer active
-```
-
-## 4.1. Member identity creation (ISV, publisher, consumer)
-The identity public and private key pairs for all members needs be created. Each member of the collaboration creates their member identity.
-
+## 5.1. Member identity creation
 ```powershell
-az cleanroom governance member keygenerator-sh | bash -s -- --gen-enc-key --name $env:MEMBER_NAME --out ./demo-resources.private
+# Ensure you have openssl installed before running the command below.
+az cleanroom governance member keygenerator-sh | bash -s -- --gen-enc-key --name $env:CUSTOMERNAME --out ./demo-resources.private
 ```
 Above command shows output similar to below.
-```
+```powershell
 -- Generating identity private key and certificate for participant "contosso"...
 Identity curve: secp384r1
 Identity private key generated at:   ./demo-resources.private/contosso_privk.pem
@@ -228,118 +116,144 @@ writing RSA key
 Encryption private key generated at:  ./demo-resources.private/contosso_enc_privk.pem
 Encryption public key generated at:   ./demo-resources.private/contosso_enc_pubk.pem (to be registered in CCF)
 ```
+The above command will generate the public/private key pair. The member’s identity private key should be stored on a trusted device (e.g. HSM) and kept private (not shared with any other member) while the certificate (e.g. member_name_cert.pem) would be registered in CCF (later in the flow).
 
-The above command will generate the public/private key pair. The member’s identity private key should be stored on a trusted device (e.g. HSM) and kept private (not shared with any other member) while the certificate (e.g. membername_cert.pem) would be registered in CCF (later in the flow).
+## 5.2. Creating the consortium
+As the next step a CCF instance needs to be created with the above members. From a confidentiality perspective any of the members (or a 3rd party like an ISV) can create the CCF instance without affecting the zero-trust assurances. In this sample we assume that between the publisher and the consumer it was agreed upon that the consumer will host the CCF instance. The consumer would create the CCF instance and then invite the publisher as a member into the consortium.
 
+```mermaid
+sequenceDiagram
+    title Creating the consortium with members
+    participant m1 as Publisher
+    participant m0 as Consumer
+    participant CCF as CCF instance
 
-## 4.2. Create the CCF instance (ISV)<!-- omit from toc -->
+    m0->>CCF: Create mCCF instance
+    CCF-->>m0: CCF created
+    m0->>CCF: Activate membership
+    Note over CCF: Consumer active
+    m0->>CCF: Deploy governance service
+    CCF-->>m0: State: Service deployed
+    m1->>m0: Share publisher identity cert
+    m0->>CCF: Propose adding publisher as member
+    CCF-->>m0: Proposal ID
+    m0->>CCF: Vote for Proposal ID
+    CCF-->>m0: State: Accepted
+    Note over CCF: Publisher accepted
+    m0->>m1: Share ccfEndpoint URL eg.<br>https://<name>.confidential-ledger.azure.com
+    m1->>CCF: Verifies state of the consortium
+    m1->>CCF: Activate membership
+    Note over CCF: Publisher active
+```
 
+### 5.2.1. Create the CCF instance <!-- omit from toc -->
+First ensure that you are logged into Azure and set the subscription (if required).
+```powershell
+# Login to Azure.
+az login
+
+# Set active subscription (optional).
+az account set --subscription "<subname>"
+```
 Run the below steps to create the CCF instance.
 ```powershell
+az group create --name $env:RESOURCEGROUP --location westus
+
 # Create the mCCF instance.
-$ccfName = $env:RESOURCE_GROUP + "-ccf"
-$memberCert = "./demo-resources.private/"+ $env:MEMBER_NAME +"_cert.pem"  # Created previously via the keygenerator-sh command.
+$ccfName = $env:RESOURCEGROUP + "-ccf"
+$consumerCert = "./demo-resources/"+ $env:CUSTOMERNAME +"_cert.pem" # Created previously via the keygenerator-sh command.
 az confidentialledger managedccfs create `
     --name $ccfName `
-    --resource-group $env:RESOURCE_GROUP `
+    --resource-group $env:RESOURCEGROUP `
     --location "southcentralus" `
-    --members "[{certificate:'$memberCert',identifier:'$env:MEMBER_NAME'}]"
+    --members "[{certificate:'$consumerCert',identifier:'$env:CUSTOMERNAME'}]"
 
 $ccfEndpoint = (az confidentialledger managedccfs show `
-    --resource-group $env:RESOURCE_GROUP `
+    --resource-group $env:RESOURCEGROUP `
     --name $ccfName `
     --query "properties.appUri" `
     --output tsv)
 
-# Deploy client-side containers to interact with the governance service as the first member.
+# "consumer" deploys client-side containers to interact with the governance service as the first member.
 az cleanroom governance client deploy `
   --ccf-endpoint $ccfEndpoint `
-  --signing-cert ./demo-resources.private/$($env:MEMBER_NAME)_cert.pem `
-  --signing-key ./demo-resources.private/$($env:MEMBER_NAME)_privk.pem `
-  --name "$env:MEMBER_NAME-client"
+  --signing-cert ./demo-resources.private/$($env:CUSTOMERNAME)_cert.pem `
+  --signing-key ./demo-resources.private/$($env:CUSTOMERNAME)_privk.pem `
+  --name "$env:CUSTOMERNAME-client"
 
 # Activate membership.
-az cleanroom governance member activate --governance-client "$env:MEMBER_NAME-client"
+az cleanroom governance member activate --governance-client "$env:CUSTOMERNAME-client"
 
 # Deploy governance service on the CCF instance.
-az cleanroom governance service deploy --governance-client "$env:MEMBER_NAME-client"
+az cleanroom governance service deploy --governance-client "$env:CUSTOMERNAME-client"
 
 # Set tenant Id as a part of the member data. This is required to enable OIDC provider in the later steps.
-$memberTenantId = az account show --query "tenantId" --output tsv
+$consumerTenantId = az account show --query "tenantId" --output tsv
 $proposalId = (az cleanroom governance member set-tenant-id `
   --identifier consumer `
-  --tenant-id $memberTenantId `
+  --tenant-id $consumerTenantId `
   --query "proposalId" `
   --output tsv `
-  --governance-client "$env:MEMBER_NAME-client")
+  --governance-client "$env:CUSTOMERNAME-client")
 
 az cleanroom governance proposal vote `
   --proposal-id $proposalId `
   --action accept `
-  --governance-client "$env:MEMBER_NAME-client"
+  --governance-client "consumer-client"
 ```
 
-## 4.3. Publish member certificate public key and tenant ID (publisher, consumer)<!-- omit from toc -->
-Once the CCF instance is created with the ISV as the initial member, the next step is to add the publisher and consumer into the consortium. For this the publisher and consumer need to share their identity public key (`<membername>_cert.pem`) and the Tenant ID with the ISV:
+### 5.2.2. Invite members into the consortium <!-- omit from toc -->
+Once the CCF instance is created with the consumer as the initial member the next step is to add the publisher into the consortium. For this the publisher needs to share their identity public key (`publisher_cert.pem`) and the Tenant Id with the consumer and then the consumer (who is hosting the CCF instance) needs to run the below command:
 ```powershell
-# Determining tenant ID.
-$memberTenantId = az account show --query "tenantId" --output tsv
-```
+# In this demo both consumer and publisher are running in the same tenant. If publisher is coming from different Microsoft Entra ID tenant then use that value below.
+$publisherTenantId = az account show --query "tenantId" --output tsv
 
-## 4.4. Invite members to the consortium (ISV)
-For each member of the collaboration, the ISV (who is hosting the CCF instance) needs to run the below commands:
-
-```powershell
-# Makes a proposal for adding the new member "collaborator".
+# "consumer" member makes a proposal for adding the new member "publisher".
 $proposalId = (az cleanroom governance member add `
-    --certificate ./demo-resources/publisher_cert.pem `
-    --identifier "<collaborator_name>" `
-    --tenant-id "<collaborator_tenantid>" `
+    --certificate ./demo-resources.public/publisher_cert.pem `
+    --identifier "publisher" `
+    --tenant-id $publisherTenantId `
     --query "proposalId" `
     --output tsv `
-    --governance-client "$env:MEMBER_NAME-client")
+    --governance-client "$env:CUSTOMERNAME-client")
 
 # Vote on the above proposal to accept the membership.
 az cleanroom governance proposal vote `
   --proposal-id $proposalId `
   --action accept `
-  --governance-client "$env:MEMBER_NAME-client"
+  --governance-client "$env:CUSTOMERNAME-client"
 ```
 
-## 4.5. Join the consortium (publisher, consumer)
-Once the publisher and consumer have been added, they now need to activate their membership before they can participate in the collaboration. The ISV must share the `ccfEndpoint` value to the publisher and consumer so they can know which CCF instance to connect to.
+Once the consumer has added the publisher as the member the publisher now needs to activate their membership before they can participate in the collaboration. The consumer must share the `ccfEndpoint` value to the publisher so they can know which CCF instance to connect to.
 
 ```powershell
-# "Deploy client-side containers to interact with the governance service as the new member.
+# "publisher" deploys client-side containers to interact with the governance service as the new member.
 az cleanroom governance client deploy `
   --ccf-endpoint $ccfEndpoint `
-  --signing-cert ./demo-resources.private/$($env:MEMBER_NAME)_cert.pem `
-  --signing-key ./demo-resources.private/$($env:MEMBER_NAME)_privk.pem `
-  --name "$env:MEMBER_NAME-client"
+  --signing-cert ./demo-resources.private/$($env:CUSTOMERNAME)_cert.pem `
+  --signing-key ./demo-resources.private/$($env:CUSTOMERNAME)_privk.pem `
+  --name "$env:CUSTOMERNAME-client"
 
-# Accept the invitation and becomes an active member in the consortium.
-az cleanroom governance member activate --governance-client "$env:MEMBER_NAME-client"
+# "publisher" accepts the invitation and becomes an active member in the consortium.
+az cleanroom governance member activate --governance-client "$env:CUSTOMERNAME-client"
 ```
 With the above steps the consortium creation that drives the creation and execution of the clean room is complete. We now proceed to preparing the datasets and making them available in the clean room.
 
-> [!NOTE]
-> The same consortium can be used/reused for executing any/all the sample scenarios. There is no need to repeat these steps unless the collaborators have changed. 
-
-# 5. Protecting data shared for collaboration
-## 5.1. KEK-DEK based encryption approach
-The data that the publisher/consumer want to bring into the collaboration would be encrypted by the respective parties such that the key to decrypt the same will only be released to the clean room environment. The sample follows an envelope encryption model for encryption of data. For the encryption of the data *Data Encryption Keys* (DEK) are generated, which are symmetric in nature. An asymmetric key, called the *Key Encryption Key* (KEK), is generated subsequently to wrap the DEK. The wrapped DEKs are stored in a Key Vault as a secret and the KEK is imported into an MHSM/Premium Key Vault behind a secure key release (SKR) policy. Within the clean room, the wrapped DEK is read from the Key Vault and the KEK is retrieved from the MHSM/Premium Key Vault following the [secure key release](https://learn.microsoft.com/en-us/azure/confidential-computing/concept-skr-attestation) protocol. The DEKs are unwrapped within the cleanroom and then used to access the storage containers.
+# 6. Publisher: Preparing encrypted datasets
+## 6.1. KEK-DEK based encryption approach
+The datasets that the publisher/consumer want to bring into the collaboration would be encrypted by the respective parties such that the key to decrypt the same will only be released to the clean room environment. The sample follows an envelope encryption model for encryption of data. For the encryption of the datasets *Data Encryption Keys* (DEK) are generated, which are symmetric in nature. An asymmetric key, called *the Key Encryption Key* (KEK), is generated subsequently to wrap the DEK. The wrapped DEKs are stored in a Key Vault as a secret and the KEK is imported into an MHSM/Premium Key Vault behind a secure key release (SKR) policy. Within the clean room, the wrapped DEK is read from the Key Vault and the KEK is retrieved from the MHSM/Premium Key Vault following the [secure key release](https://learn.microsoft.com/en-us/azure/confidential-computing/concept-skr-attestation) protocol. The DEKs are unwrapped within the cleanroom and then used to access the storage containers.
 
 The parties can choose between a Managed HSM or a Premium Azure Key Vault for storing their encryption keys passing the `-kvType` paramter to the scripts below.
 
-## 5.2. Encrypt and upload data
-It is assumed that the publisher and consumer have had out-of-band communication and have agreed on the data sets that will be shared. In these samples it is assumed that the protected data is in the form of one or more files in one or more folders at the publisher's and consumer's end.
+## 6.2. Encrypt and upload data
+It is assumed that the publisher has had out-of-band communication with the consumer and have agreed on the data sets that will be shared. In this sample it assumes that the dataset(s) are in the form of one or more files in one or more folders at the publisher's end.
 
 The setup involves creating an Azure resource group into which a storage account and a Managed HSM or Premium Key Vault are deployed. The dataset(s) in the form of files are encrypted (using the KEK-DEK approach mentioned earlier) and uploaded into the the storage account. Each folder in the source dataset would correspond to one storage container, and all files in that folder are [uploaded as blobs to Azure Storage using Customer Provided Keys](https://learn.microsoft.com/azure/storage/blobs/encryption-customer-provided-keys). The sample creates one symmetric key per folder (storage container).
 
 ```mermaid
 sequenceDiagram
     title Encrypting and uploading data to Azure Storage
-    participant m1 as Collaborator
+    participant m1 as Publisher
     participant storage as Azure Storage
     participant akv as Azure Key Vault
     participant mi as Managed Identity

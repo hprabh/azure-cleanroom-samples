@@ -18,16 +18,13 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-Import-Module $PSScriptRoot/../common/infra-scripts/azure-helpers.psm1 -Force -DisableNameChecking
+Import-Module $PSScriptRoot/azure-helpers.psm1 -Force -DisableNameChecking
 
 if ($outDir -eq "") {
-    $outDir = "$PSScriptRoot/demo-resources/$resourceGroup"
-}
-else {
-    $outDir = "$outDir/$resourceGroup"
+    $outDir = "./demo-resources.private"
 }
 
-pwsh $PSScriptRoot/demo-resources/generate-names.ps1 `
+pwsh $PSScriptRoot/generate-names.ps1 `
     -resourceGroup $resourceGroup `
     -kvType $kvType `
     -overridesFilePath $overridesFilePath `
@@ -38,8 +35,8 @@ pwsh $PSScriptRoot/demo-resources/generate-names.ps1 `
 $sandbox_common = $outDir
 
 # create resource group
-Write-Host "Creating resource group $resourceGroup in $RESOURCE_GROUP_LOCATION"
-az group create --location $RESOURCE_GROUP_LOCATION --name $resourceGroup --tags $resourceGroupTags
+# Write-Host "Creating resource group $resourceGroup in $RESOURCE_GROUP_LOCATION"
+# az group create --location $RESOURCE_GROUP_LOCATION --name $resourceGroup --tags $resourceGroupTags
 
 $objectId = GetLoggedInEntityObjectId
 $result = @{

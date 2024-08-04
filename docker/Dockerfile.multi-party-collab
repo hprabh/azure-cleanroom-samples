@@ -1,0 +1,37 @@
+FROM mcr.microsoft.com/powershell
+
+RUN apt-get update && apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release
+
+RUN mkdir -p /etc/apt/keyrings
+RUN install -m 0755 -d /etc/apt/keyrings
+
+RUN curl -sLS https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | tee /etc/apt/keyrings/microsoft.gpg > /dev/null
+RUN chmod go+r /etc/apt/keyrings/microsoft.gpg
+
+RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+RUN chmod a+r /etc/apt/keyrings/docker.asc
+
+COPY docker/docker.list /etc/apt/sources.list.d/docker.list
+RUN apt-get update && apt-get install -y docker-ce-cli
+
+COPY docker/azure-cli.sources /etc/apt/sources.list.d/azure-cli.sources
+RUN apt-get update && apt-get install -y azure-cli=2.61.0-1~jammy
+
+WORKDIR /home/scratch
+RUN curl -sLS https://aka.ms/downloadazcopy-v10-linux-arm64 -o azcopy.tar.gz
+RUN mkdir azcopy
+RUN tar -xf ./azcopy.tar.gz -C ./azcopy --strip-components=1
+RUN mv azcopy/azcopy /usr/bin
+RUN chmod 755 /usr/bin/azcopy
+
+RUN apt-get update && apt-get install -y jq
+
+RUN az extension add --name confcom -y
+RUN az extension add --name managedccfs -y
+RUN az extension add --source https://cleanroomazcli.blob.core.windows.net/azcli/cleanroom-0.0.3-py2.py3-none-any.whl -y --allow-preview true
+COPY docker/custom.py /root/.azure/cliextensions/cleanroom/azext_cleanroom/custom.py
+
+WORKDIR /home/samples/multi-party-collab
+COPY ./multi-party-collab .
+
+WORKDIR /home/samples
