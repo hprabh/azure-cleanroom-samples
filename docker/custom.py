@@ -1135,6 +1135,18 @@ def get_cleanroom_config(cleanroom_config):
     return config
 
 
+def get_datastore_config(datastore_config_file):
+    try:
+        with open(datastore_config_file, "r") as f:
+            config = yaml.safe_load(f)
+    except FileNotFoundError:
+        raise CLIError(
+            f"Cannot find file {datastore_config_file}. Check the --datastore-config parameter value."
+        )
+
+    return config
+
+
 def write_cleanroom_config(cleanroom_config, config):
     with open(cleanroom_config, "w") as f:
         yaml.dump(config, f, default_flow_style=False)
@@ -1182,7 +1194,7 @@ def get_application(applicationDetails):
 
 
 def add_datastore(
-    storage_account,
+    storage_account_url,
     container_name,
     name,
     identity,
@@ -1190,9 +1202,6 @@ def add_datastore(
     wrapped_dek_name,
     is_read_only,
 ):
-    storage_account_url = az_cli(
-        f"storage account show --ids {storage_account} --query primaryEndpoints.blob"
-    )
     dek_key_vault_url = az_cli(
         f"resource show --id {dek_key_vault} --query properties.vaultUri"
     )
@@ -1213,6 +1222,151 @@ def add_datastore(
     }
 
     return get_dataset(blobDetails)
+
+
+def datasource_init_cmd(
+    cmd,
+    datastore_config,
+    storage_account,
+    name,
+    container_name="",
+):
+    container_name = container_name or name
+
+    config = []
+    if os.path.exists(datastore_config):
+        config = get_datastore_config(datastore_config)
+
+    keys_dir = get_keys_dir_path(datastore_config)
+    if not os.path.exists(keys_dir):
+        os.makedirs(keys_dir)
+
+    storage_account_name = az_cli(
+        f"storage account show --ids {storage_account} --query name"
+    )
+    storage_account_url = az_cli(
+        f"storage account show --ids {storage_account} --query primaryEndpoints.blob"
+    )
+    logger.warning(
+        f"Creating storage container '{container_name}' in {storage_account}."
+    )
+    container = az_cli(
+        f"storage container create --name {container_name} --account-name {storage_account_name} --auth-mode login"
+    )
+
+    key_file_path = os.path.abspath(os.path.join(keys_dir, f"{name}.bin"))
+    if not os.path.exists(key_file_path):
+        from Crypto.Random import get_random_bytes
+
+        encryption_key = get_random_bytes(32)
+        with open(key_file_path, "wb") as key_file:
+            key_file.write(encryption_key)
+
+    datastore_entry = {
+        "name": "datasource/" + name,
+        "keyFilePath": key_file_path,
+        "storeProviderURL": storage_account_url,
+        "storeName": container_name
+        }
+    for index, x in enumerate(config):
+        if x["name"] == datastore_entry["name"]:
+            config[index] = datastore_entry
+            break
+    else:
+        config.append(datastore_entry)
+
+    write_cleanroom_config(datastore_config, config)
+    logger.warning(f"Datasource '{name}' added to datastore configuration.")
+
+
+def datasink_init_cmd(
+    cmd,
+    cleanroom_config,
+    storage_account,
+    name,
+    identity,
+    dek_key_vault,
+    container_name="",
+):
+    container_name = container_name or name
+
+    config = get_cleanroom_config(cleanroom_config)
+
+    if not "kek" in config:
+        raise CLIError("Run az cleanroom config set-kek first.")
+
+    key_file_path = get_keys_dir_path(cleanroom_config)
+    logger.warning(
+        f"Creating storage container '{container_name}' in {storage_account}."
+    )
+    storage_account_name = az_cli(
+        f"storage account show --ids {storage_account} --query name"
+    )
+    container = az_cli(
+        f"storage container create --name {container_name} --account-name {storage_account_name} --auth-mode login"
+    )
+
+    from Crypto.Random import get_random_bytes
+
+    encryption_key = get_random_bytes(32)
+    key_file_path = os.path.abspath(os.path.join(key_file_path, f"{name}.bin"))
+    with open(key_file_path, "wb") as key_file:
+        key_file.write(encryption_key)
+
+    wrapped_dek_name = f"wrapped-{name}-dek"
+    datasink = add_datastore(
+        storage_account,
+        container_name,
+        name,
+        identity,
+        dek_key_vault,
+        wrapped_dek_name,
+        False,
+    )
+
+    private_config = get_cleanroom_private_config(cleanroom_config)
+
+    datasink["Protection"]["EncryptionSecret"]["KEK"]["BackingResource"][
+        "NamePrefix"
+    ] = config["kek"]["generateName"]
+    datasink["Protection"]["EncryptionSecret"]["KEK"]["BackingResource"]["Provider"][
+        "Configuration"
+    ] = config["kek"]["__MAA_URL__"]
+    datasink["Protection"]["EncryptionSecret"]["KEK"]["BackingResource"]["Provider"][
+        "URL"
+    ] = config["kek"]["__HSM_URL__"]
+
+    if config["specification"]["datasinks"] is None:
+        config["specification"]["datasinks"] = []
+
+    identity_config = az_cli(f"resource show --id {identity} --query properties")
+    for index, x in enumerate(config["identities"]):
+        if x["clientId"] == identity_config["clientId"]:
+            config["identities"][index] = identity_config
+            break
+    else:
+        config["identities"].append(identity_config)
+
+    entry = {"name": name, "datasink": datasink}
+    for index, x in enumerate(config["specification"]["datasinks"]):
+        if x["name"] == entry["name"]:
+            config["specification"]["datasinks"][index] = entry
+            break
+    else:
+        config["specification"]["datasinks"].append(entry)
+
+    private_entry = {"name": "datasink/" + name, "keyFilePath": key_file_path}
+    for index, x in enumerate(private_config):
+        if x["name"] == private_entry["name"]:
+            private_config[index] = private_entry
+            break
+    else:
+        private_config.append(private_entry)
+
+    write_cleanroom_config(cleanroom_config, config)
+
+    write_cleanroom_private_config(cleanroom_config, private_config)
+    logger.warning(f"Datasink {name} added to cleanroom configuration.")
 
 
 def config_init_cmd(cmd, cleanroom_config):
@@ -1387,50 +1541,33 @@ def config_wrap_secret_cmd(
 def config_add_datasource_cmd(
     cmd,
     cleanroom_config,
-    storage_account,
-    name,
+    datastore_config,
+    datasource_name,
     identity,
     dek_key_vault,
-    container_name="",
 ):
-    container_name = container_name or name
-
     config = get_cleanroom_config(cleanroom_config)
-
     if not "kek" in config:
         raise CLIError("Run az cleanroom config set-kek first.")
+    
+    datastore_config = get_datastore_config(datastore_config)
+    for index, x in enumerate(datastore_config):
+        if x["name"] == "datasource/"+ datasource_name:
+            datasource_config = datastore_config[index]
+            break
+    else:
+        raise CLIError("Run az cleanroom datasource init first.")
 
-    key_file_path = get_keys_dir_path(cleanroom_config)
-    storage_account_name = az_cli(
-        f"storage account show --ids {storage_account} --query name"
-    )
-    logger.warning(
-        f"Creating storage container '{container_name}' in {storage_account}."
-    )
-    container = az_cli(
-        f"storage container create --name {container_name} --account-name {storage_account_name} --auth-mode login"
-    )
-
-    key_file_path = os.path.abspath(os.path.join(key_file_path, f"{name}.bin"))
-    if not os.path.exists(key_file_path):
-        from Crypto.Random import get_random_bytes
-
-        encryption_key = get_random_bytes(32)
-        with open(key_file_path, "wb") as key_file:
-            key_file.write(encryption_key)
-
-    wrapped_dek_name = f"wrapped-{name}-dek"
+    wrapped_dek_name = f"wrapped-{datasource_name}-dek"
     datasource = add_datastore(
-        storage_account,
-        container_name,
-        name,
+        datasource_config["storeProviderURL"],
+        datasource_config["storeName"],
+        datasource_name,
         identity,
         dek_key_vault,
         wrapped_dek_name,
         True,
     )
-
-    private_config = get_cleanroom_private_config(cleanroom_config)
 
     datasource["Protection"]["EncryptionSecret"]["KEK"]["BackingResource"][
         "NamePrefix"
@@ -1453,7 +1590,7 @@ def config_add_datasource_cmd(
     else:
         config["identities"].append(identity_config)
 
-    entry = {"name": name, "datasource": datasource}
+    entry = {"name": datasource_name, "datasource": datasource}
     for index, x in enumerate(config["specification"]["datasources"]):
         if x["name"] == entry["name"]:
             config["specification"]["datasources"][index] = entry
@@ -1461,18 +1598,8 @@ def config_add_datasource_cmd(
     else:
         config["specification"]["datasources"].append(entry)
 
-    private_entry = {"name": "datasource/" + name, "keyFilePath": key_file_path}
-    for index, x in enumerate(private_config):
-        if x["name"] == private_entry["name"]:
-            private_config[index] = private_entry
-            break
-    else:
-        private_config.append(private_entry)
-
     write_cleanroom_config(cleanroom_config, config)
-
-    write_cleanroom_private_config(cleanroom_config, private_config)
-    logger.warning(f"Datasource '{name}' added to cleanroom configuration.")
+    logger.warning(f"Datasource '{datasource_name}' added to cleanroom configuration.")
 
 
 def config_add_datasink_cmd(
@@ -1709,25 +1836,19 @@ def config_validate_cmd(cmd, cleanroom_config):
     validate_config(config)
 
 
-def datasource_upload_cmd(cmd, cleanroom_config, datasource_name, dataset_folder):
-    private_config = get_cleanroom_private_config(cleanroom_config)
-    config = get_cleanroom_config(cleanroom_config)
+def datasource_upload_cmd(cmd, datastore_config, datasource_name, dataset_folder):
+    private_config = get_datastore_config(datastore_config)
     datasources = [
-        x
-        for x in config["specification"]["datasources"]
-        if x["name"] == datasource_name
+        x for x in private_config if x["name"] == "datasource/" + datasource_name
     ]
     if len(datasources) == 0:
         raise CLIError(
-            f"Datasource {datasource_name} not found in cleanroom configuration."
+            f"Datasource {datasource_name} not found in datastore configuration."
         )
-    datasource = datasources[0]["datasource"]
+    datasource = datasources[0]
 
     # Get the key path.
-    key_file_path = [
-        x for x in private_config if x["name"] == "datasource/" + datasource_name
-    ][0]["keyFilePath"]
-
+    key_file_path = datasource["keyFilePath"]
     with open(key_file_path, "rb") as f:
         encryption_key = f.read()
     encryption_key_base_64 = base64.b64encode(encryption_key).decode("utf-8")
@@ -1736,10 +1857,11 @@ def datasource_upload_cmd(cmd, cleanroom_config, datasource_name, dataset_folder
         "utf-8"
     )
 
+    # TODO: Why does this require a tenant ID other than logged in user?
     # Get the tenant Id of the datasource and indicate azcopy to use the tenant Id.
     # https://learn.microsoft.com/en-us/azure/storage/common/storage-ref-azcopy-configuration-settings
-    tenant_id = datasource["Identity"]["tenantId"]
-    os.environ["AZCOPY_TENANT_ID"] = tenant_id
+    # tenant_id = datasource["Identity"]["tenantId"]
+    # os.environ["AZCOPY_TENANT_ID"] = tenant_id
 
     azcopy_auto_login_type = "AZCLI"
     is_msi = az_cli("account show --query user.assignedIdentityInfo -o tsv")
@@ -1751,7 +1873,7 @@ def datasource_upload_cmd(cmd, cleanroom_config, datasource_name, dataset_folder
     os.environ["CPK_ENCRYPTION_KEY"] = encryption_key_base_64
     os.environ["CPK_ENCRYPTION_KEY_SHA256"] = encryption_key_sha256_base_64
     os.environ["AZCOPY_AUTO_LOGIN_TYPE"] = azcopy_auto_login_type
-    container_url = datasource["Store"]["Provider"]["URL"] + datasource["Store"]["Name"]
+    container_url = datasource["storeProviderURL"] + datasource["storeName"]
     logger.warning(f"Uploading dataset {dataset_folder} to {container_url}")
     file_path = dataset_folder + f"{os.path.sep}*"
 
@@ -1789,7 +1911,7 @@ def datasource_upload_cmd(cmd, cleanroom_config, datasource_name, dataset_folder
         raise CLIError("Failed to upload dataset. See error details above.")
 
 
-def datasink_download_cmd(cmd, cleanroom_config, datasink_name, target_folder):
+def datasink_download_cmd(cmd, cleanroom_config, datastore_config, datasink_name, target_folder):
     azcopy_download(datasink_name, cleanroom_config, target_folder)
 
 
@@ -1816,8 +1938,8 @@ def telemetry_aspire_dashboard_cmd(cmd, telemetry_folder, project_name=""):
     logger.warning("Open Aspire Dashboard at http://localhost:%s.", port)
 
 
-def azcopy_download(datasink_name, cleanroom_config, target_folder):
-    private_config = get_cleanroom_private_config(cleanroom_config)
+def azcopy_download(datasink_name, cleanroom_config, datastore_config, target_folder):
+    private_config = get_datastore_config(datastore_config)
     config = get_cleanroom_config(cleanroom_config)
     datasinks = [
         x for x in config["specification"]["datasinks"] if x["name"] == datasink_name
