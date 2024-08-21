@@ -20,7 +20,6 @@ These samples demonstrate usage of clean rooms for multi-party collaboration for
 - [7. Publisher: Setting up log collection](#7-publisher-setting-up-log-collection)
 - [8. Share publisher clean room configuration with consumer](#8-share-publisher-clean-room-configuration-with-consumer)
 - [9. Consumer: Output preparation and application configuration](#9-consumer-output-preparation-and-application-configuration)
-  - [9.1. Preparing datasink to receive output](#91-preparing-datasink-to-receive-output)
   - [9.2. Application configuration and mount points](#92-application-configuration-and-mount-points)
     - [9.2.1. Mounting storage containers using Blobfuse2](#921-mounting-storage-containers-using-blobfuse2)
 - [10. Proposing a governance contract](#10-proposing-a-governance-contract)
@@ -369,7 +368,7 @@ sequenceDiagram
 Initialize Azure resources required for running samples from this repository by executing the following command from the `/home/samples` directory:
 ```powershell
 # Create storage account and KV.
-./scripts/prepare-resources.ps1 -kvType akvpremium
+$resourceResult = (./scripts/prepare-resources.ps1 -kvType akvpremium)
 ```
 
 Publish datasets for running the demo by executing the following command from the `/home/samples` directory. This initializes datastores and uploads encrypted datasets required for executing the samples:
@@ -377,7 +376,8 @@ Publish datasets for running the demo by executing the following command from th
 $scenario = "analytics"
 
 # Publish data. 
-# Storaga account picked from ./demo-resources.private/$env:RESOURCE_GROUP.generated.json, use -sa to override.
+# Storage account is picked from ./demo-resources.private/$env:RESOURCE_GROUP.generated.json
+# by default, use -sa to override.
 ./demos/$scenario/publish-data.ps1 -persona $env:MEMBER_NAME
 ```
 
@@ -397,7 +397,7 @@ specification:
 
 In the `publisher-demo` directory enter the below to create a storage account, add the dataset `publisher-input` as a datasource and then encrypt and upload files into Azure storage. If your scenario has multiple datasets/folders that need to be encrypted and uploaded then repeat the `add-datasource` and `upload` commands for every folder.
 ```powershell
-./demos/$scenario/add-config-data.ps1 -persona $env:MEMBER_NAME -cleanroom_config_file $configResult.configFile -datastore_config_file ./demo-resources.private/datastores.config -keystore $result.dek.kv.id -identity $configResult.mi.id
+./demos/$scenario/add-config-data.ps1 -persona $env:MEMBER_NAME
 ```
 
 The above steps captures the information related to the datasets provided, their URLs in the storage accounts and encryption key information in the `publisher-config` file. This file would be exported later and shared with the consumer to let them know the datsources the publisher is sharing via the clean room.
@@ -413,66 +413,13 @@ In this collabration say the consumer wants to inspect both the infrastructure a
 The below step configures the storage account endpoint details for collecting the application logs. Actual download of the logs happens later on.
 ```powershell
 # $result below refers to the output of the prepare-resources.ps1 that was run earlier.
-az cleanroom config set-logging-v2 `
-    --cleanroom-config-file $configResult.configFile `
-    --datastore-config ./demo-resources.private/datastores.config `
-    --datastore-keystore ./demo-resources.secret/keys `
-    --storage-account $result.sa.id `
-    --identity $configResult.mi.id `
-    --key-vault $result.dek.kv.id
-
-az cleanroom config set-telemetry-v2 `
-    --cleanroom-config-file $configResult.configFile `
-    --datastore-config ./demo-resources.private/datastores.config `
-    --datastore-keystore ./demo-resources.secret/keys `
-    --storage-account $result.sa.id `
-    --identity $configResult.mi.id `
-    --key-vault $result.dek.kv.id
+./scripts/config-telemetry.ps1 -scenario $scenario
 ```
 
 # 8. Share publisher clean room configuration with consumer
 For the consumer to configure their application to access the data from the publisher it needs to know the details about the datasources that have been prepared by the publisher. Eg the consumer needs to refer to the individual datasources by their name when specifying where to mount each datasource in the container. The publisher needs to share the `publisher-config` file with the consumer.
 
 # 9. Consumer: Output preparation and application configuration
-## 9.1. Preparing datasink to receive output
-In your `consumer-demo` directory in this sample, initialize a clean room configuration file named `consumer-config` with the below command:
-```powershell
-$consumerConfig = "./consumer-demo/consumer-config"
-az cleanroom config init --cleanroom-config $consumerConfig
-```
-The above command creates the file with the below content:
-```
-identities: []
-specification:
-  applications: []
-  datasinks: []
-  datasources: []
-  telemetry: {}
-```
-In the `consumer-demo` directory enter the below to prepare a datasink that will receive the encrypted output that is generated by the clean room and is meant for the consumer's consumption:
-```powershell
-$consumerResourceGroup = "consumer-$((New-Guid).ToString().Substring(0, 8))"
-
-# Create storage account, KV and MI resources.
-$result = (./prepare-resources.ps1 -resourceGroup $consumerResourceGroup -kvType akvpremium)
-
-# Create a KEK entry in the configuration.
-az cleanroom config set-kek `
-    --kek-key-vault $result.kek.kv.id `
-    --maa-url $result.maa_endpoint `
-    --cleanroom-config $consumerConfig
-
-# Create a datasink entry in the configuration.
-az cleanroom config add-datasink `
-    --cleanroom-config $consumerConfig `
-    --name consumer-output `
-    --storage-account $result.sa.id `
-    --identity $result.mi.id `
-    --dek-key-vault $result.dek.kv.id
-```
-
-The above steps prepares a storage account to receive the clean room output and captures the information related to the output like the storage account and encryption key information in the `consumer-config` file.
-
 ## 9.2. Application configuration and mount points
 The application details such as the app name, container registry, image ID, command, environment variables and resources needs to be captured as below. Replace the values for the parameters as appropriate.
 

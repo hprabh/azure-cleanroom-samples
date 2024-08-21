@@ -2,18 +2,23 @@ param(
     [Parameter(Mandatory = $true)]
     [ValidateSet("fabrikam", "contosso")]
     [string]$persona,
-    [string]$cleanroom_config_file,
-    [string]$datastore_config_file,
-    [string]$keystore,
-    [string]$identity
+
+    [string]$cleanroomConfig = "./demo-resources.private/$env:RESOURCE_GROUP-analytics.generated.json",
+    [string]$resourceConfig = "./demo-resources.private/$env:RESOURCE_GROUP.generated.json",
+    [string]$datastoreConfig = "./demo-resources.private/datastores.config",
+    [string]$datastoreDir = "./demo-resources.private/datastores",
+
 )
 $datastoreName = "analytics-$persona-input"
 $datasourceName = "$persona-input"
 
+$cleanroomConfigResult = Get-Content $cleanroomConfig | ConvertFrom-Json
+$resourceConfigResult = Get-Content $resourceConfig | ConvertFrom-Json
+
 az cleanroom config add-datasource-v2 `
-    --cleanroom-config-file $cleanroom_config_file `
+    --cleanroom-config-file $cleanroomConfigResult.configFile `
     --name $datasourceName `
-    --datastore-config $datastore_config_file `
+    --datastore-config $datastoreConfig `
     --datastore-name $datastoreName `
-    --key-vault $keystore `
-    --identity $identity
+    --key-vault $resourceConfigResult.dek.kv.id `
+    --identity $cleanroomConfigResult.mi.id

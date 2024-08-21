@@ -4,10 +4,10 @@ param(
     [string]$persona,
 
     [string]$sa = "",
-    [string]$resourceConfig = "./demo-resources.private/$env:RESOURCE_GROUP.generated.json"
+    [string]$resourceConfig = "./demo-resources.private/$env:RESOURCE_GROUP.generated.json",
     [string]$keysDir = "./demo-resources.secret/keys",
-    [string]$datastoreConfig = "./demo-resources.private/datastores.config"
-    [string]$datastoreDir = "./demo-resources.private/datastores"
+    [string]$datastoreConfig = "./demo-resources.private/datastores.config",
+    [string]$datastoreDir = "./demo-resources.private/datastores",
 )
 
 if ($sa -eq "")
