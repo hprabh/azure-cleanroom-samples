@@ -1,19 +1,20 @@
 param(
     [Parameter(Mandatory = $true)]
-    [string]$customerName,
+    [string]$memberName,
 
-    [string]$imageName = "samples.take01"
+    [string]$imageName = "azure-cleanroom-samples"
 )
 
-$resourceGroup = "$customerName-$((New-Guid).ToString().Substring(0, 8))"
+$resourceGroup = "$memberName-$((New-Guid).ToString().Substring(0, 8))"
 
 docker create `
-    --env CUSTOMERNAME=$customerName `
-    --env RESOURCEGROUP=$resourceGroup `
+    --env MEMBER_NAME=$memberName `
+    --env RESOURCE_GROUP=$resourceGroup `
     -v "//var/run/docker.sock:/var/run/docker.sock" `
-    -v "$pwd/demo-resources/$customerName.public:/home/samples/demo-resources.public" `
-    -v "$pwd/demo-resources/$customerName.private:/home/samples/demo-resources.private" `
-    --name "$customerName-shell" `
+    -v "$pwd/demo-resources/$memberName.public:/home/samples/demo-resources.public" `
+    -v "$pwd/demo-resources/$memberName.private:/home/samples/demo-resources.private" `
+    -v "$pwd/demo-resources/$memberName.secret:/home/samples/demo-resources.secret" `
+    --name "$memberName-shell" `
     -it $imageName
 
-docker container start -a -i "$customerName-shell"
+docker container start -a -i "$memberName-shell"

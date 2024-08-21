@@ -1,18 +1,12 @@
 param(
     [Parameter(Mandatory = $true)]
-    [string]$resourceGroup,
-
-    [Parameter(Mandatory = $true)]
     [ValidateSet("mhsm", "akvpremium")]
     [string]$kvType,
 
-    [string]$outDir = "",
-
-    [Parameter()]
+    [string]$resourceGroup = "$env:RESOURCE_GROUP",
+    [string]$outDir = "./demo-resources.private",
     [string]$backupKv = "",
-
     [string]$overridesFilePath = "",
-
     [string]$resourceGroupTags = ""
 )
 
@@ -20,9 +14,7 @@ $ErrorActionPreference = 'Stop'
 
 Import-Module $PSScriptRoot/azure-helpers.psm1 -Force -DisableNameChecking
 
-if ($outDir -eq "") {
-    $outDir = "./demo-resources.private"
-}
+mkdir -p $outDir
 
 pwsh $PSScriptRoot/generate-names.ps1 `
     -resourceGroup $resourceGroup `
@@ -43,7 +35,6 @@ $result = @{
     kek          = @{}
     dek          = @{}
     sa           = @{}
-    mi           = @{}
     maa_endpoint = ""
 }
 
@@ -80,13 +71,7 @@ $storageAccount = Create-Storage-Resources `
     -objectId $objectId
 $result.sa = $storageAccount
 
-Write-Host "Creating managed identity $MANAGED_IDENTITY_NAME in resource group $resourceGroup"
-$managedIdentityResult = (az identity create `
-        --name $MANAGED_IDENTITY_NAME `
-        --resource-group $resourceGroup) | ConvertFrom-Json
-$result.mi = $managedIdentityResult
-
 $result.maa_endpoint = $MAA_URL
 
-$result | ConvertTo-Json -Depth 100 > $outDir/resources.generated.json
+$result | ConvertTo-Json -Depth 100 > "$outDir/$resourceGroup.generated.json"
 return $result

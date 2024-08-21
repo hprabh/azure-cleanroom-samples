@@ -23,8 +23,8 @@ function Get-UniqueString ([string]$id, $length = 13) {
 }
 
 $uniqueString = Get-UniqueString("${resourceGroup}")
-$tdpKvName = "${uniqueString}kv"
-$tdpmhsmName = $kvType -eq "mhsm" ? "${uniqueString}mhsm" : ""
+$kvName = "${uniqueString}kv"
+$hsmName = $kvType -eq "mhsm" ? "${uniqueString}mhsm" : ""
 
 if ($overridesFilePath -ne "") {
     $overrides = Get-Content $overridesFilePath | Out-String | ConvertFrom-StringData
@@ -36,12 +36,13 @@ else {
 mkdir -p $outDir
 
 @"
+`$RESOURCE_GROUP = "$resourceGroup"
 `$RESOURCE_GROUP_LOCATION = $($overrides['$RESOURCE_GROUP_LOCATION'] ?? "`"westus`"")
 `$STORAGE_ACCOUNT_NAME = $($overrides['$STORAGE_ACCOUNT_NAME'] ?? "`"${uniqueString}sa`"")
-`$MHSM_NAME = $($overrides['$MHSM_NAME'] ?? "`"$tdpmhsmName`"")
+`$MHSM_NAME = $($overrides['$MHSM_NAME'] ?? "`"$hsmName`"")
 `$MAA_URL = $($overrides['$MAA_URL'] ?? "`"https://sharedneu.neu.attest.azure.net`"")
-`$KEYVAULT_NAME = $($overrides['$KEYVAULT_NAME'] ?? "`"$tdpKvName`"")
-`$MANAGED_IDENTITY_NAME = $($overrides['$MANAGED_IDENTITY_NAME'] ?? "`"${uniqueString}-mi`"")
+`$MANAGED_IDENTITY_NAME_PREFIX = $($overrides['$MANAGED_IDENTITY_NAME_PREFIX'] ?? "`"${uniqueString}-mi`"")
+`$KEYVAULT_NAME = $($overrides['$KEYVAULT_NAME'] ?? "`"$kvName`"")
 `$OIDC_STORAGE_ACCOUNT_NAME = $($overrides['$OIDC_STORAGE_ACCOUNT_NAME'] ?? "`"${uniqueString}oidcsa`"")
 `$OIDC_CONTAINER_NAME = $($overrides['$OIDC_CONTAINER_NAME'] ?? "`"cgs-oidc`"")
 "@ > $outDir/names.generated.ps1

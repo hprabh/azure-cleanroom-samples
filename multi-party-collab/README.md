@@ -84,6 +84,7 @@ To set this infrastructure up, we will need Docker installed locally. Installati
     -v "//var/run/docker.sock:/var/run/docker.sock" `
     -v "$pwd/demo-resources/$memberName.public:/home/samples/demo-resources.public" `
     -v "$pwd/demo-resources/$memberName.private:/home/samples/demo-resources.private" `
+    -v "$pwd/demo-resources/$memberName.secret:/home/samples/demo-resources.secret" `
     --name "$memberName-shell" `
     -it "azure-cleanroom-samples"
 
@@ -284,6 +285,7 @@ Once the CCF instance is created with the ISV as the initial member, the next st
 ```powershell
 # Determining tenant ID.
 $memberTenantId = az account show --query "tenantId" --output tsv
+echo $memberTenantId
 ```
 
 ## 4.4. Invite members to the consortium (ISV)
