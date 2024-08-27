@@ -1,28 +1,23 @@
 param(
     [Parameter(Mandatory = $true)]
-    [string]$resourceGroup,
-    [Parameter(Mandatory = $true)]
-    [string]$governanceClient,
-    [Parameter(Mandatory = $true)]
     [string]$contractId,
-    [string]$outDir = ""
 
+    [Parameter(Mandatory = $true)]
+    [ValidateSet("analytics")]
+    [string]$scenario,
+
+    [string]$resourceGroup = "$env:RESOURCE_GROUP",
+    [string]$collabConfig = "./demo-resources.private/$env:RESOURCE_GROUP-$scenario.generated.json",
+    [string]$outDir = "./demo-resources.private",
+    [string]$governanceClient = "$env:MEMBER_NAME-client"
 )
 
 $ErrorActionPreference = 'Stop'
-
-if ($outDir -eq "") {
-    $outDir = "$PSScriptRoot/demo-resources/$resourceGroup"
-}
-else {
-    $outDir = "$outDir/$resourceGroup"
-}
 . $outDir/names.generated.ps1
 
-Import-Module $PSScriptRoot/../common/infra-scripts/azure-helpers.psm1 -Force -DisableNameChecking
+Import-Module $PSScriptRoot/azure-helpers.psm1 -Force -DisableNameChecking
 
 $isMhsm = $(-not $($MHSM_NAME -eq ""))
-
 if ($isMhsm) {
     $keyVaultName = $MHSM_NAME
 }
@@ -30,7 +25,8 @@ else {
     $keyVaultName = $KEYVAULT_NAME
 }
 
-$managedIdentity = (az identity show --name $MANAGED_IDENTITY_NAME --resource-group $resourceGroup | ConvertFrom-Json)
+$configResult = (Get-Content $collabConfig | ConvertFrom-Json)
+$managedIdentity = (az identity show --name $configResult.mi.name --resource-group $resourceGroup | ConvertFrom-Json)
 CheckLastExitCode
 
 Write-Host "Assigning permissions to the managed identity on the storage account"
@@ -188,7 +184,7 @@ else {
 Write-Host "Setting up federation on managed identity with issuerUrl $issuerUrl and subject $contractId"
 az identity federated-credential create `
     --name "$contractId-federation" `
-    --identity-name $MANAGED_IDENTITY_NAME `
+    --identity-name $configResult.mi.name `
     --resource-group $resourceGroup `
     --issuer $issuerUrl `
     --subject $contractId

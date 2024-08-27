@@ -25,7 +25,6 @@ These samples demonstrate usage of clean rooms for multi-party collaboration for
 - [10. Proposing a governance contract](#10-proposing-a-governance-contract)
 - [11. Agreeing upon the contract](#11-agreeing-upon-the-contract)
   - [11.1. Agree as publisher](#111-agree-as-publisher)
-  - [11.2. Agree as consumer](#112-agree-as-consumer)
 - [12. Propose ARM template, CCE policy and log collection](#12-propose-arm-template-cce-policy-and-log-collection)
 - [13. Accept ARM template, CCE policy and logging proposals](#13-accept-arm-template-cce-policy-and-logging-proposals)
   - [13.1. Verify and accept as publisher](#131-verify-and-accept-as-publisher)
@@ -96,6 +95,8 @@ To set this infrastructure up, we will need the following tools to be installed 
     ```powershell
     az extension add --source https://cleanroomazcli.blob.core.windows.net/azcli/cleanroom-0.0.3-py2.py3-none-any.whl -y --allow-preview true
     ```
+9. Set the environment variable "MEMBER_NAME" to a friendly name identifying the collaborator.
+10. Set the environment variable "RESOURCE_GROUP" to the name of Azure Resource Group to be used for creating resources.
 
 </details>
 <br>
@@ -419,6 +420,15 @@ The below step configures the storage account endpoint details for collecting th
 # 8. Share publisher clean room configuration with consumer
 For the consumer to configure their application to access the data from the publisher it needs to know the details about the datasources that have been prepared by the publisher. Eg the consumer needs to refer to the individual datasources by their name when specifying where to mount each datasource in the container. The publisher needs to share the `publisher-config` file with the consumer.
 
+```powershell
+$privateFolder = "./demo-resources.private"
+$publicFolder = "./demo-resources.public"
+$scenario = "analytics"
+
+$memberConfig = $privateFolder + "/$env:RESOURCE_GROUP-$scenario.config"
+cp $memberConfig "$publicFolder/$env:MEMBER_NAME-$scenario.config"
+```
+
 # 9. Consumer: Output preparation and application configuration
 ## 9.2. Application configuration and mount points
 The application details such as the app name, container registry, image ID, command, environment variables and resources needs to be captured as below. Replace the values for the parameters as appropriate.
@@ -479,7 +489,7 @@ The above sequence of steps are performed by the commands below:
 # configured by both the producer and consumer.
 az cleanroom config view `
     --cleanroom-config ./demo-resources.private/analysis.config `
-    --configs ./demo-resources.public/fabrikam.config ./demo-resources.public/contosso.config `
+    --configs ./demo-resources.public/fabrikam-analysis.config ./demo-resources.public/contosso-analysis.config `
     > ./demo-resources.public/analysis.cleanroom.config
 
 # Validate the contract structure before proposing.
@@ -526,22 +536,6 @@ az cleanroom governance contract vote `
     --proposal-id $contract.proposalId `
     --action accept `
     --governance-client "$env:MEMBER_NAME-client"
-```
-## 11.2. Agree as consumer
-```powershell
-$contract = (az cleanroom governance contract show `
-    --id $contractId `
-    --governance-client "consumer-client" | ConvertFrom-Json)
-
-# Inspect the contract details that is capturing the storage, application container and identity details.
-$contract.data
-
-# Accept it.
-az cleanroom governance contract vote `
-    --id $contractId `
-    --proposal-id $contract.proposalId `
-    --action accept `
-    --governance-client "consumer-client"
 ```
 
 # 12. Propose ARM template, CCE policy and log collection
