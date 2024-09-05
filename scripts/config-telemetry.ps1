@@ -6,7 +6,7 @@ param(
     [string]$cleanroomConfig = "./demo-resources.private/$env:RESOURCE_GROUP-$scenario.generated.json",
     [string]$resourceConfig = "./demo-resources.private/$env:RESOURCE_GROUP.generated.json",
     [string]$datastoreConfig = "./demo-resources.private/datastores.config",
-    [string]$keysDir = "./demo-resources.secret/keys",
+    [string]$keysDir = "./demo-resources.secret/keys"
 )
 
 $cleanroomConfigResult = Get-Content $cleanroomConfig | ConvertFrom-Json
