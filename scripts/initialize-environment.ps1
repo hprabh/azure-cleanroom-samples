@@ -1,8 +1,6 @@
 param(
-    [Parameter(Mandatory = $true)]
     [ValidateSet("mhsm", "akvpremium")]
-    [string]$kvType,
-
+    [string]$kvType = "akvpremium",
     [string]$resourceGroup = "$env:RESOURCE_GROUP",
     [string]$outDir = "./demo-resources.private",
     [string]$backupKv = "",
@@ -12,11 +10,11 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-Import-Module $PSScriptRoot/azure-helpers.psm1 -Force -DisableNameChecking
+Import-Module $PSScriptRoot/azure-helpers/azure-helpers.psm1 -Force -DisableNameChecking
 
 mkdir -p $outDir
 
-pwsh $PSScriptRoot/generate-names.ps1 `
+pwsh $PSScriptRoot/azure-helpers/generate-names.ps1 `
     -resourceGroup $resourceGroup `
     -kvType $kvType `
     -overridesFilePath $overridesFilePath `
@@ -26,9 +24,8 @@ pwsh $PSScriptRoot/generate-names.ps1 `
 . $outDir/names.generated.ps1
 $sandbox_common = $outDir
 
-# create resource group
-# Write-Host "Creating resource group $resourceGroup in $RESOURCE_GROUP_LOCATION"
-# az group create --location $RESOURCE_GROUP_LOCATION --name $resourceGroup --tags $resourceGroupTags
+Write-Host "Creating resource group $resourceGroup in $RESOURCE_GROUP_LOCATION"
+az group create --location $RESOURCE_GROUP_LOCATION --name $resourceGroup --tags $resourceGroupTags
 
 $objectId = GetLoggedInEntityObjectId
 $result = @{

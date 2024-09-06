@@ -1,13 +1,11 @@
 param(
-    [Parameter(Mandatory = $true)]
     [ValidateSet("fabrikam", "contosso")]
-    [string]$persona,
-
+    [string]$persona = "$env:MEMBER_NAME",
     [string]$sa = "",
     [string]$resourceConfig = "./demo-resources.private/$env:RESOURCE_GROUP.generated.json",
-    [string]$keysDir = "./demo-resources.secret/keys",
+    [string]$keyStore = "./demo-resources.secret/keys",
     [string]$datastoreConfig = "./demo-resources.private/datastores.config",
-    [string]$datastoreDir = "./demo-resources.private/datastores",
+    [string]$datastoreDir = "./demo-resources.private/datastores"
 )
 
 if ($sa -eq "")
@@ -21,8 +19,10 @@ $datastoreName = "analytics-$persona-input"
 az cleanroom datastore add `
     --name $datastoreName `
     --config $datastoreConfig `
-    --keysDir $keysDir `
-    --sa $sa
+    --keystore $keyStore `
+    --encryption-mode CPK `
+    --backingstore-type Azure_BlobStorage `
+    --backingstore-id $sa
 
 $datastoreFolder = "$datastoreDir/$datastoreName"
 mkdir -p $datastoreFolder

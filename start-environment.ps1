@@ -2,11 +2,28 @@ param(
     [Parameter(Mandatory = $true)]
     [ValidateSet("litware", "fabrikam", "contosso", "client", "operator")]
     [string]$memberName,
-
-    [string]$imageName = "azure-cleanroom-samples"
+    [string]$resourceGroup = "",
+    [string]$imageName = "azure-cleanroom-samples",
+    [switch]$customCliExtension
 )
 
-$resourceGroup = "$memberName-$((New-Guid).ToString().Substring(0, 8))"
+# (TODO) Cut across to prebuild docker image once we setup the repository.
+if (!(docker image ls $imageName 2> $null)) { 
+    $dockerArgs = "image build -t $imageName -f ./docker/Dockerfile.multi-party-collab `".`""
+
+    if ($customCliExtension)
+    {
+        $dockerArgs += " --build-arg EXTENSION_SOURCE=local"
+    }
+    
+    Start-Process docker $dockerArgs
+}
+
+
+if ($resourceGroup -eq "")
+{
+    $resourceGroup = "$memberName-$((New-Guid).ToString().Substring(0, 8))"
+}
 
 docker create `
     --env MEMBER_NAME=$memberName `
