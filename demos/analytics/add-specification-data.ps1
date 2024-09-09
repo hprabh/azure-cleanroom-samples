@@ -1,8 +1,6 @@
 param(
-    [Parameter(Mandatory = $true)]
     [ValidateSet("fabrikam", "contosso")]
-    [string]$persona,
-
+    [string]$persona = "$env:MEMBER_NAME",
     [string]$cleanroomConfig = "./demo-resources.private/$env:RESOURCE_GROUP-analytics.generated.json",
     [string]$resourceConfig = "./demo-resources.private/$env:RESOURCE_GROUP.generated.json",
     [string]$datastoreConfig = "./demo-resources.private/datastores.config",

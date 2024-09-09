@@ -28,6 +28,8 @@ These samples demonstrate usage of a **_confidential clean room_** (**CCR**) for
   - [KEK-DEK based encryption approach](#kek-dek-based-encryption-approach)
   - [Encrypt and upload data](#encrypt-and-upload-data)
 - [Authoring collaboration contract](#authoring-collaboration-contract)
+  - [Initializing a contract fragment](#initializing-a-contract-fragment)
+  - [Adding data sets to the contract](#adding-data-sets-to-the-contract)
   - [Publisher: Setting up log collection](#publisher-setting-up-log-collection)
   - [Share publisher clean room configuration with consumer](#share-publisher-clean-room-configuration-with-consumer)
   - [Application configuration and mount points](#application-configuration-and-mount-points)
@@ -169,18 +171,16 @@ sequenceDiagram
 
     Note over m0,mx: Authoring collaboration contract
     par
-      m0->>m0: Generates cleanroom contract fragment
-      m0->>mx: Shares cleanroom contract fragment
+      m0->>mx: Litware contract fragment
     and
-      m1->>m1: Generates cleanroom contract fragment
-      m1->>mx: Shares cleanroom contract fragment
+      m1->>mx: Fabrikam contract fragment
     and
-      m2->>m2: Generates cleanroom contract fragment
-      m2->>mx: Shares cleanroom contract fragment
+      m2->>mx: Contosso contract fragment
     end
+    mx->>mx: Merges fragments into collaboration contract
 
     Note over m0,CCF: Finalizing collaboration contract
-    mx->>CCF: Proposes merged clean room contract
+    mx->>CCF: Proposes collaboration contract
     par
       m0->>CCF: Accepts contract
     and
@@ -255,48 +255,48 @@ From a confidentiality perspective any of the collaborators or the operator can 
 ```mermaid
 sequenceDiagram
     title Consortium creation flow
-    participant m0 as litware
-    participant m1 as fabrikam
-    participant m2 as contosso
-    participant mx as operator
+    actor m0 as litware
+    actor m1 as fabrikam
+    actor m2 as contosso
+    actor mx as operator
     participant CCF as CCF instance
 
-    m0->>mx: Share litware identity cert
-    m1->>mx: Share fabrikam identity cert
-    m2->>mx: Share contosso identity cert
+    par
+      m0->>mx: Share litware identity cert
+    and
+      m1->>mx: Share fabrikam identity cert
+    and
+      m2->>mx: Share contosso identity cert
+    end
     mx->>CCF: Create CCF instance
     CCF-->>mx: CCF created
     mx->>CCF: Activate membership
     Note over CCF: operator active
     mx->>CCF: Deploy governance service
     CCF-->>mx: State: Service deployed
-    mx->>CCF: Propose adding litware as member
-    CCF-->>mx: Proposal ID
-    mx->>CCF: Vote for Proposal ID
-    Note over CCF: litware accepted
-    CCF-->>mx: State: Accepted
-    mx->>CCF: Propose adding fabrikam as member
-    CCF-->>mx: Proposal ID
-    mx->>CCF: Vote for Proposal ID
-    Note over CCF: fabrikam accepted
-    CCF-->>mx: State: Accepted
-    mx->>CCF: Propose adding contosso as member
-    CCF-->>mx: Proposal ID
-    mx->>CCF: Vote for Proposal ID
-    Note over CCF: contosso accepted
-    CCF-->>mx: State: Accepted
-    mx->>m0: Share ccfEndpoint URL eg.<br>https://<name>.confidential-ledger.azure.com
-    mx->>m1: Share ccfEndpoint URL eg.<br>https://<name>.confidential-ledger.azure.com
-    mx->>m2: Share ccfEndpoint URL eg.<br>https://<name>.confidential-ledger.azure.com
-    m0->>CCF: Verifies state of the consortium
-    m0->>CCF: Activate membership
-    Note over CCF: litware active
-    m1->>CCF: Verifies state of the consortium
-    m1->>CCF: Activate membership
-    Note over CCF: fabrikam active
-    m1->>CCF: Verifies state of the consortium
-    m1->>CCF: Activate membership
-    Note over CCF: contosso active
+    loop Litware, Fabrikam, Contosso
+      mx->>CCF: Propose adding member
+      CCF-->>mx: Proposal ID
+      mx->>CCF: Vote for Proposal ID
+      Note over CCF: member accepted
+      CCF-->>mx: State: Accepted
+    end
+    par
+      mx->>m0: Share ccfEndpoint URL eg.<br>https://<name>.confidential-ledger.azure.com
+      m0->>CCF: Verifies state of the consortium
+      m0->>CCF: Activate membership
+      Note over CCF: litware active
+    and
+      mx->>m1: Share ccfEndpoint URL eg.<br>https://<name>.confidential-ledger.azure.com
+      m1->>CCF: Verifies state of the consortium
+      m1->>CCF: Activate membership
+      Note over CCF: fabrikam active
+    and
+      mx->>m2: Share ccfEndpoint URL eg.<br>https://<name>.confidential-ledger.azure.com
+      m2->>CCF: Verifies state of the consortium
+      m2->>CCF: Activate membership
+      Note over CCF: contosso active
+    end
 ```
 
 ## Member identity creation (litware, fabrikam, contosso)
@@ -356,21 +356,22 @@ The samples follow an envelope encryption model for encryption of data. For the 
 The parties can choose between a Managed HSM or a Premium Azure Key Vault for storing their encryption keys passing the `-kvType` paramter to the scripts below.
 
 ## Encrypt and upload data
-It is assumed that the collaborators have had out-of-band communication and have agreed on the data sets that will be shared. In these samples it is assumed that the protected data is in the form of one or more files in one or more folders at each collaborators end.
+It is assumed that the collaborators have had out-of-band communication and have agreed on the data sets that will be shared. In these samples, the protected data is in the form of one or more files in one or more folders at each collaborators end.
 
 These dataset(s) in the form of files are encrypted using the [KEK-DEK](#kek-dek-based-encryption-approach) approach and uploaded into the the storage account created as part of [initializing the sample environment](#initializing-the-environment). Each folder in the source dataset would correspond to one Azure Blob storage container, and all files in the folder are uploaded as blobs to Azure Storage using specified encryption mode - [client-side encryption]() / server-side encryption using [customer provided key](https://learn.microsoft.com/azure/storage/blobs/encryption-customer-provided-keys). Only one symmetric key (DEK) is created per folder (blob storage container).
 
 ```mermaid
 sequenceDiagram
     title Encrypting and uploading data to Azure Storage
-    participant m1 as Collaborator
+    actor m1 as Collaborator
     participant storage as Azure Storage
 
     loop every dataset folder
         m1->>m1: Generate symmetric key (DEK) per folder
         m1->>storage: Create storage container for folder
         loop every file in folder
-            m1->>storage: Encrypt file using DEK and upload to container
+            m1->>m1: Encrypt file using DEK
+            m1->>storage: Upload to container
         end
     end
 ```
@@ -389,10 +390,21 @@ $scenario = "analytics"
 
 # Authoring collaboration contract
 
+Every party participating in the collaboration authors their respective contract fragment independently. In these samples, the collaborators share their respective fragments with the _operator_ who merges them into a collaboration contract.
+
+## Initializing a contract fragment
+
+The following command initializes the contract fragement for a given scenario:
+
 ```powershell
-$configResult = (./scripts/init-config.ps1 -scenario $scenario)
+$scenario = "analytics"
+
+./scripts/initialize-specification.ps1 -scenario $scenario
 ```
-The above command creates the file with the below content:
+
+<!-- TODO: Update below with actual output. -->
+<!-- 
+The above command creates a configuration file with the below content:
 ```
 identities: []
 specification:
@@ -401,19 +413,22 @@ specification:
   datasources: []
   telemetry: {}
 
-```
+``` -->
 
-In the `publisher-demo` directory enter the below to create a storage account, add the dataset `publisher-input` as a datasource and then encrypt and upload files into Azure storage. If your scenario has multiple datasets/folders that need to be encrypted and uploaded then repeat the `add-datasource` and `upload` commands for every folder.
+## Adding data sets to the contract
+
+The following command adds details about the datastores to be accessed by the clean room and their mode (source/sink) to the contract fragment:
+
 ```powershell
-./demos/$scenario/add-config-data.ps1 -persona $env:MEMBER_NAME
+./demos/$scenario/add-specification-data.ps1
 ```
 
-The above steps captures the information related to the datasets provided, their URLs in the storage accounts and encryption key information in the `publisher-config` file. This file would be exported later and shared with the consumer to let them know the datsources the publisher is sharing via the clean room.
+<!-- The above steps captures the information related to the datasets provided, their URLs in the storage accounts and encryption key information in the `publisher-config` file. This file would be exported later and shared with the consumer to let them know the datsources the publisher is sharing via the clean room.
 
 > [!TIP]
 > `add-datasource` step might fail with the below error in case the RBAC permissions on the storage account created by the `prepare-resources.ps1` has not been applied yet. Try the `add-datasource` command again after a while.
 > 
-> ![alt text](./assets/add-datasource-error.png)
+> ![alt text](./assets/add-datasource-error.png) -->
 
 ## Publisher: Setting up log collection
 In this collabration say the consumer wants to inspect both the infrastructure and application logs once clean room finishes execution. But the publisher has a concern that sensitive information might leak out via logs and hence wants to inspect the log files before the consumer gets them. This can be achieved by using a storage account that is under the control of the publisher as the destination for the execution logs. These log files will be encrypted and written out to Azure storage with a key that is in the publisher's control. The publisher can then download and decrypt these logs, inspect them and if satisfied can share these with the consumer.

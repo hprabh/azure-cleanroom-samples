@@ -1,10 +1,14 @@
 param(
-    [string]$cleanroom_config_file,
+    [ValidateSet("litware")]
+    [string]$persona = "$env:MEMBER_NAME",
+    [string]$cleanroomConfig = "./demo-resources.private/$env:RESOURCE_GROUP-analytics.generated.json",
     [string]$image = "cleanroomsamples.azurecr.io/azure-cleanroom-samples/demos/analytics@sha256:303f94478f7908c94958d1c3651a754f493e54cac23e39b9b2b096d7e8931387"
 )
 
+$cleanroomConfigResult = Get-Content $cleanroomConfig | ConvertFrom-Json
+
 az cleanroom config add-application `
-    --cleanroom-config $cleanroom_config_file `
+    --cleanroom-config $cleanroomConfigResult.configFile `
     --name demos-analytics-app `
     --image $image `
     --command "python3.10 ./analytics.py" `
@@ -18,4 +22,4 @@ az cleanroom config add-application `
 
 az cleanroom config set-network-policy `
     --allow-all `
-    --cleanroom-config $cleanroom_config_file
+    --cleanroom-config $cleanroomConfigResult.configFile
