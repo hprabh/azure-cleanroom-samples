@@ -18,32 +18,35 @@ These samples demonstrate usage of a **_confidential clean room_** (**CCR**) for
 - [Samples environment (per collaborator)](#samples-environment-per-collaborator)
   - [Bringing up the environment](#bringing-up-the-environment)
   - [Initializing the environment](#initializing-the-environment)
-- [\[TODO\] High level execution sequence](#todo-high-level-execution-sequence)
-- [Setup the consortium](#setup-the-consortium)
+- [High level execution sequence](#high-level-execution-sequence)
+- [Setting up the consortium](#setting-up-the-consortium)
   - [Member identity creation (litware, fabrikam, contosso)](#member-identity-creation-litware-fabrikam-contosso)
   - [Create the CCF instance (operator)](#create-the-ccf-instance-operator)
   - [Invite members to the consortium (operator)](#invite-members-to-the-consortium-operator)
   - [Join the consortium (litware, fabrikam, contosso)](#join-the-consortium-litware-fabrikam-contosso)
-- [Protect data shared for collaboration](#protect-data-shared-for-collaboration)
+- [Publishing data](#publishing-data)
   - [KEK-DEK based encryption approach](#kek-dek-based-encryption-approach)
   - [Encrypt and upload data](#encrypt-and-upload-data)
-- [Publisher: Setting up log collection](#publisher-setting-up-log-collection)
-- [Share publisher clean room configuration with consumer](#share-publisher-clean-room-configuration-with-consumer)
-- [Consumer: Output preparation and application configuration](#consumer-output-preparation-and-application-configuration)
+- [Authoring collaboration contract](#authoring-collaboration-contract)
+  - [Publisher: Setting up log collection](#publisher-setting-up-log-collection)
+  - [Share publisher clean room configuration with consumer](#share-publisher-clean-room-configuration-with-consumer)
   - [Application configuration and mount points](#application-configuration-and-mount-points)
-    - [Mounting storage containers using Blobfuse2](#mounting-storage-containers-using-blobfuse2)
-- [Proposing a governance contract](#proposing-a-governance-contract)
-- [Agreeing upon the contract](#agreeing-upon-the-contract)
-  - [Agree as publisher](#agree-as-publisher)
-- [Propose ARM template, CCE policy and log collection](#propose-arm-template-cce-policy-and-log-collection)
-- [Accept ARM template, CCE policy and logging proposals](#accept-arm-template-cce-policy-and-logging-proposals)
-  - [Verify and accept as publisher](#verify-and-accept-as-publisher)
-- [Setup access for the clean room](#setup-access-for-the-clean-room)
-  - [Setup access as publisher](#setup-access-as-publisher)
-  - [Setup access as consumer](#setup-access-as-consumer)
-- [Deploy clean room](#deploy-clean-room)
-- [Download encrypted output](#download-encrypted-output)
-- [Download and share logs](#download-and-share-logs)
+  - [Mounting storage containers using Blobfuse2](#mounting-storage-containers-using-blobfuse2)
+- [Finalizing collaboration contract](#finalizing-collaboration-contract)
+  - [Proposing a governance contract](#proposing-a-governance-contract)
+  - [Agreeing upon the contract](#agreeing-upon-the-contract)
+    - [Agree as publisher](#agree-as-publisher)
+  - [Propose ARM template, CCE policy and log collection](#propose-arm-template-cce-policy-and-log-collection)
+  - [Accept ARM template, CCE policy and logging proposals](#accept-arm-template-cce-policy-and-logging-proposals)
+    - [Verify and accept as publisher](#verify-and-accept-as-publisher)
+  - [Setup access for the clean room](#setup-access-for-the-clean-room)
+    - [Setup access as publisher](#setup-access-as-publisher)
+    - [Setup access as consumer](#setup-access-as-consumer)
+- [Using the clean room](#using-the-clean-room)
+  - [Deploy clean room](#deploy-clean-room)
+  - [Download encrypted output](#download-encrypted-output)
+- [Governing the cleanroom](#governing-the-cleanroom)
+  - [Download and share logs](#download-and-share-logs)
   - [Explore the downloaded logs](#explore-the-downloaded-logs)
   - [View telemetry for infrastucture containers](#view-telemetry-for-infrastucture-containers)
   - [See audit events](#see-audit-events)
@@ -122,59 +125,129 @@ Once the environment is setup, initialize it for executing the samples by execut
 # Login to Azure. If required, set the subscription.
 az login
 
-# Create the resource group and other Azure resources required for executing the samples.
+# Create the resource group and other Azure resources required for executing the samples such as a storage account and key vault (Premium).
 ./scripts/initialize-environment.ps1
 ```
 
 > [!IMPORTANT]
 > All the steps henceforth assume that you are working in the `/home/samples` directory of the docker container, and commands are executed relative to that path.
 
-# [TODO] High level execution sequence
-Before we begin below gives the overall flow of execution that happens in this sample. It gives a high level perspective that might be helpful to keep in mind as you run through the steps.
+# High level execution sequence
+Before we begin below gives the overall flow of execution that happens across the samples. It gives a high level perspective that might be helpful to keep in mind as you run through the steps.
 ```mermaid
 sequenceDiagram
     title Collaboration flow
-    participant m0 as litware
-    participant m1 as fabrikam
-    participant m2 as contosso
-    participant mx as operator
+    actor m0 as litware
+    actor m1 as fabrikam
+    actor m2 as contosso
+    actor mx as operator
+
     participant CCF as CCF instance
+    participant CACI as Clean Room instance (C-ACI)
 
-    %% participant m2 as ISV
-    %% participant m1 as Publisher
-    %% participant m0 as Consumer
-    %% participant CCF as Clean Room Governance<br>(CCF instance)
-    participant CACI as Clean Room<br> (C-ACI instance)
+    actor user as client
 
-    m2->>CCF: Creates consortium
-    m1->>CCF: Joins consortium
-    m0->>CCF: Joins consortium
-    m1->>m1: Prepares datasets
-    m1->>m1: Setup log collection
-    m0->>m0: Prepares application and datasets
-    m0->>CCF: Proposes clean room contract
-    m1->>CCF: Accepts contract
-    m0->>CCF: Proposes ARM deployment<br> template and CCE policy
+    Note over m0,CCF: Setting up the consortium
+    mx->>CCF: Creates consortium
+    mx->>CCF: Registers members
+    par
+      m0->>CCF: Joins consortium
+    and
+      m1->>CCF: Joins consortium
+    and
+      m2->>CCF: Joins consortium
+    end
+
+    Note over m0,m2: Publishing data
+    par
+      m0->>m0: Publishes application
+    and
+      m1->>m1: Publishes model(s)/datasets
+    and
+      m2->>m2: Publishes datasets
+    end
+
+    Note over m0,mx: Authoring collaboration contract
+    par
+      m0->>m0: Generates cleanroom contract fragment
+      m0->>mx: Shares cleanroom contract fragment
+    and
+      m1->>m1: Generates cleanroom contract fragment
+      m1->>mx: Shares cleanroom contract fragment
+    and
+      m2->>m2: Generates cleanroom contract fragment
+      m2->>mx: Shares cleanroom contract fragment
+    end
+
+    Note over m0,CCF: Finalizing collaboration contract
+    mx->>CCF: Proposes merged clean room contract
+    par
+      m0->>CCF: Accepts contract
+    and
+      m1->>CCF: Accepts contract
+    and
+      m2->>CCF: Accepts contract
+    end
+    mx->>CCF: Proposes ARM deployment<br> template and CCE policy
+    par
+      m0->>CCF: Accepts ARM deployment template and CCE policy
+    and
+      m1->>CCF: Accepts ARM deployment template and CCE policy
+    and
+      m2->>CCF: Accepts ARM deployment template and CCE policy
+    end
+    par
+      m0->>m0: Configures access to resources by clean room
+    and
+      m1->>m1: Configures access to resources by clean room
+    and
+      m2->>m2: Configures access to resources by clean room
+    end
+
+    Note over mx,user: Using the clean room (API)
+    mx-)CACI: Deploys clean room
+    activate CACI
+    loop Collaboration lifetime
+      user-)CACI: Invokes clean room application API
+      CACI->>CCF: Checks execution consent
+      CACI->>CCF: Gets tokens for Azure resource access
+      CACI->>CACI: Accesses secrets in Key Vault
+      CACI->>CACI: Accesses encrypted storage
+      CACI--)user: API response
+    end
+    mx-)CACI: Delete clean room
+    deactivate CACI
+
+    Note over m0,CACI: Using the clean room (Job)
+    mx-)CACI: Deploys clean room
+    activate CACI
+    CACI->>CCF: Checks execution consent
+    CACI->>CCF: Gets tokens for Azure resource access
+    CACI->>CACI: Accesses secrets in Key Vault
+    CACI->>CACI: Accesses encrypted storage
+    CACI--)mx: Job execution complete
+    deactivate CACI
+
+    Note over m0,CACI: Governing the cleanroom
+    activate CACI
     m0->>CCF: Proposes enable logging
-    m1->>CCF: Accepts ARM deployment<br> template and CCE policy
     m1->>CCF: Accepts enable logging
-    m0->>m0: Configure access to resources by clean room
-    m1->>m1: Configures access to resources by clean room
-    m2->>CACI: Deploys clean room
-    CACI->>CCF: Check execution consent
-    CACI->>CCF: Get tokens for Azure resource access
-    CACI->>CACI: Access secrets in Key Vault
-    CACI->>CACI: Access encrypted storage
-    CACI->>CACI: Write out result to encrypted storage
-    m0->>CACI: Waits for result
-    m1->>m0: Shares application logs
+    m2->>CCF: Accepts enable logging
+    m0-)CACI: Export application logs
+    CACI->>CCF: Checks application telemetry consent
+    CACI->>CACI: Exports application logs to storage
+    CACI--)m0: Application logs exported
+    m0->>m0: Reviews application logs
+    deactivate CACI
 ```
 <br>
-Once the clean room is deployed the key components involved during execution are shown below:
 
-![alt text](./assets/encrypted-storage-layout.png)
+<!-- TODO: Update block diagram to be more generic. -->
+<!-- Once the clean room is deployed the key components involved during execution are shown below:
 
-# Setup the consortium
+![alt text](./assets/encrypted-storage-layout.png) -->
+
+# Setting up the consortium
 Collaboration using a CCR is realized and governed through a consortium created in [CCF](https://microsoft.github.io/CCF/main/overview/what_is_ccf.html) hosting a [Clean Room Governance Service (CGS)](../../src/governance/README.md). All the collaborating parties become participating members in the consortium.
 
 From a confidentiality perspective any of the collaborators or the operator can create the CCF instance without affecting the zero-trust assurances. In these samples, we assume that it was agreed upon that the operator will host the CCF instance. The operator would create the CCF instance and then invite all the collaborators as members into the consortium.
@@ -274,7 +347,7 @@ With the above steps the consortium creation that drives the creation and execut
 > [!NOTE]
 > The same consortium can be used/reused for executing any/all the sample scenarios. There is no need to repeat these steps unless the collaborators have changed. 
 
-# Protect data shared for collaboration
+# Publishing data
 Sensitive data that any of the parties want to bring into the collaboration needs to be encrypted in a manner that ensures the key to decrypt this data will only be released to the clean room environment. 
 
 ## KEK-DEK based encryption approach
@@ -283,9 +356,9 @@ The samples follow an envelope encryption model for encryption of data. For the 
 The parties can choose between a Managed HSM or a Premium Azure Key Vault for storing their encryption keys passing the `-kvType` paramter to the scripts below.
 
 ## Encrypt and upload data
-It is assumed that the publisher and consumer have had out-of-band communication and have agreed on the data sets that will be shared. In these samples it is assumed that the protected data is in the form of one or more files in one or more folders at the publisher's and consumer's end.
+It is assumed that the collaborators have had out-of-band communication and have agreed on the data sets that will be shared. In these samples it is assumed that the protected data is in the form of one or more files in one or more folders at each collaborators end.
 
-The setup involves creating an Azure resource group into which a storage account and a Managed HSM or Premium Key Vault are deployed. The dataset(s) in the form of files are encrypted (using the KEK-DEK approach mentioned earlier) and uploaded into the the storage account. Each folder in the source dataset would correspond to one storage container, and all files in that folder are [uploaded as blobs to Azure Storage using Customer Provided Keys](https://learn.microsoft.com/azure/storage/blobs/encryption-customer-provided-keys). The sample creates one symmetric key per folder (storage container).
+These dataset(s) in the form of files are encrypted using the [KEK-DEK](#kek-dek-based-encryption-approach) approach and uploaded into the the storage account created as part of [initializing the sample environment](#initializing-the-environment). Each folder in the source dataset would correspond to one Azure Blob storage container, and all files in the folder are uploaded as blobs to Azure Storage using specified encryption mode - [client-side encryption]() / server-side encryption using [customer provided key](https://learn.microsoft.com/azure/storage/blobs/encryption-customer-provided-keys). Only one symmetric key (DEK) is created per folder (blob storage container).
 
 ```mermaid
 sequenceDiagram
@@ -302,7 +375,7 @@ sequenceDiagram
     end
 ```
 
-Publish datasets for running the demo by executing the following command from the `/home/samples` directory. This initializes datastores and uploads encrypted datasets required for executing the samples:
+The following command initializes datastores and uploads encrypted datasets required for executing the samples:
 ```powershell
 $scenario = "analytics"
 
@@ -313,6 +386,8 @@ $scenario = "analytics"
 #
 ./demos/$scenario/publish-data.ps1
 ```
+
+# Authoring collaboration contract
 
 ```powershell
 $configResult = (./scripts/init-config.ps1 -scenario $scenario)
@@ -340,7 +415,7 @@ The above steps captures the information related to the datasets provided, their
 > 
 > ![alt text](./assets/add-datasource-error.png)
 
-# Publisher: Setting up log collection
+## Publisher: Setting up log collection
 In this collabration say the consumer wants to inspect both the infrastructure and application logs once clean room finishes execution. But the publisher has a concern that sensitive information might leak out via logs and hence wants to inspect the log files before the consumer gets them. This can be achieved by using a storage account that is under the control of the publisher as the destination for the execution logs. These log files will be encrypted and written out to Azure storage with a key that is in the publisher's control. The publisher can then download and decrypt these logs, inspect them and if satisfied can share these with the consumer.
 
 The below step configures the storage account endpoint details for collecting the application logs. Actual download of the logs happens later on.
@@ -349,7 +424,7 @@ The below step configures the storage account endpoint details for collecting th
 ./scripts/config-telemetry.ps1 -scenario $scenario
 ```
 
-# Share publisher clean room configuration with consumer
+## Share publisher clean room configuration with consumer
 For the consumer to configure their application to access the data from the publisher it needs to know the details about the datasources that have been prepared by the publisher. Eg the consumer needs to refer to the individual datasources by their name when specifying where to mount each datasource in the container. The publisher needs to share the `publisher-config` file with the consumer.
 
 ```powershell
@@ -361,7 +436,6 @@ $memberConfig = $privateFolder + "/$env:RESOURCE_GROUP-$scenario.config"
 cp $memberConfig "$publicFolder/$env:MEMBER_NAME-$scenario.config"
 ```
 
-# Consumer: Output preparation and application configuration
 ## Application configuration and mount points
 The application details such as the app name, container registry, image ID, command, environment variables and resources needs to be captured as below. Replace the values for the parameters as appropriate.
 
@@ -374,7 +448,7 @@ az cleanroom config init --cleanroom-config ./demo-resources.private/analysis.co
 ```
 For demo purposes this sample uses the `golang` container image to compile and run code from within the container image itself. In a real world scenario the container image would be the consumer's application and not the `golang` image.
 
-### Mounting storage containers using Blobfuse2
+## Mounting storage containers using Blobfuse2
 The `--mounts` flag allows you to mount a datasource or datasink in a container. `--mount` consists of multiple key-value pairs, separated by commas and each consisting of a `key=value` tuple.
 - `src`: The source of the mount. This is the `name` of a `datasource` or `datasink` that needs to be mounted. Eg in this sample `publisher-input` is the datasource name present in `publisher-config` while `consumer-output` is the datasink name present in `consumer-config`.
 - `dst`: The destination takes as its value the path where the datasource/datasink gets mounted in the container.
@@ -383,7 +457,8 @@ During clean room execution each of the `src` mounts that are mentioned above ge
 
 The resources for the application container should be allocated so as not to violate confidential ACI limits as defined [here](https://learn.microsoft.com/en-us/azure/container-instances/container-instances-resource-and-quota-limits#confidential-container-resources-preview).
 
-# Proposing a governance contract
+# Finalizing collaboration contract
+## Proposing a governance contract
 Once the two parties are finished with above steps we have the following artifacts generated:
 - `publisher-config` document at the publisher's end and shared with the consumer.
 - `consumer-config` document at the consumer's end
@@ -450,10 +525,10 @@ az cleanroom governance contract propose `
 ```
 The above command creates a contract in the governance service with the clean room specification yaml as its contents. Next both the consumer and publisher inspect the proposed contract and accept after verification.
 
-# Agreeing upon the contract
+## Agreeing upon the contract
 The publisher/client can now query CCF to get the proposed contract, run their validations and accept or reject the contract. To achieve this:
 
-## Agree as publisher 
+### Agree as publisher 
 ```powershell
 $contract = (az cleanroom governance contract show `
     --id $contractId `
@@ -470,7 +545,7 @@ az cleanroom governance contract vote `
     --governance-client "$env:MEMBER_NAME-client"
 ```
 
-# Propose ARM template, CCE policy and log collection
+## Propose ARM template, CCE policy and log collection
 Once the contract is accepted by both parties, the party deploying the clean room can now generate an [Azure Confidential Container Instance](https://learn.microsoft.com/azure/container-instances/container-instances-confidential-overview) ARM template along with the CCE policy. Once the ARM template is generated, the [Confidential Computing Enforcement (CCE) policy](https://learn.microsoft.com/en-us/azure/container-instances/container-instances-confidential-overview#confidential-computing-enforcement-policies) can be computed. The command below generates both the ARM template and CCE policy following the flow mentioned [here](https://learn.microsoft.com/azure/container-instances/container-instances-tutorial-deploy-confidential-containers-cce-arm). Run the following command:
 ```powershell
 mkdir ./demo-resources.public/$contractId
@@ -541,16 +616,16 @@ az cleanroom governance proposal show-actions `
     --governance-client "$env:MEMBER_NAME-client"
 ```
 
-# Accept ARM template, CCE policy and logging proposals
+## Accept ARM template, CCE policy and logging proposals
 Once the ARM template and CCE policy proposals are available, the remaining parties can validate and vote on these proposals. In this sample, we run a simple validation and accept the template and CCE policy.
 
-## Verify and accept as publisher
+### Verify and accept as publisher
 Run the following as the publisher.
 ```powershell
 ./scripts/accept-deployment-proposals.ps1 -contractId $contractId
 ```
 
-# Setup access for the clean room
+## Setup access for the clean room
 Both the publisher and the consumer need to give access to the clean room so that the clean room environment can access resources in their respective tenants. To do this first the the DEKs that were created for dataset encryption are now wrapped using a KEK. The KEK is uploaded in Key Vault and configured with a secure key release (SKR) policy while the wrapped-DEK is saved as a secret in Key Vault.
 
 Further the managed identities (created earlier as part of the dataset preparation) is given access to resources and then we create federated credentials on the managed identity. The federated credential allows the clean room to get the managed identity access token during execution.
@@ -576,7 +651,7 @@ sequenceDiagram
     m0->>m0: Setup OIDC issuer endpoint
     m0->>mi: Setup federated credential on MI
 ```
-## Setup access as publisher
+### Setup access as publisher
 Run the following as the publisher.
 ```powershell
 # Creates a KEK with SKR policy, wraps DEKs with the KEK and put in kv.
@@ -596,7 +671,7 @@ az cleanroom config wrap-deks `
 > 
 > ![alt text](./assets/setup-access-error.png)
 
-## Setup access as consumer
+### Setup access as consumer
 Run the following as the consumer.
 ```powershell
 # Creates a KEK with SKR policy, wraps DEKs with the KEK and put in kv.
@@ -611,8 +686,8 @@ az cleanroom config wrap-deks `
     -contractId $contractId `
     -governanceClient "consumer-client"
 ```
-
-# Deploy clean room
+# Using the clean room
+## Deploy clean room
 Once the ARM template and CCE policy proposals have been accepted and access has been configured, the party deploying the clean room (the consumer in our case) can do so by running the following:
 
 ```powershell
@@ -636,7 +711,7 @@ Run the following script to wait for the cleanroom to exit.
 
 Once execution completes the result is written out to `consumer-ouput` datasink as configured by the consumer.
 
-# Download encrypted output
+## Download encrypted output
 Post execution, the encrypted output is written out to the consumer's storage account. To decrypt and download this, run the following:
 ```powershell
 az cleanroom datasink download `
@@ -650,7 +725,8 @@ gzip -d ./consumer-demo/consumer-output/consumer-output/output.gz
 cat ./consumer-demo/consumer-output/consumer-output/output
 ```
 
-# Download and share logs
+# Governing the cleanroom
+## Download and share logs
 The publisher can download the infrastructure telemetry and application logs. These are available post execution in an encrypted form. To decrypt and inspect, run the following:
 ```powershell
 az cleanroom logs download `
