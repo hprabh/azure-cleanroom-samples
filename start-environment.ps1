@@ -17,8 +17,7 @@ if ($null -eq $localImage.ID) {
         $dockerArgs += " --build-arg EXTENSION_SOURCE=local"
     }
 
-    Write-Host "docker $dockerArgs"
-    Start-Process docker $dockerArgs
+    Start-Process docker $dockerArgs -Wait
 }
 
 if ($resourceGroup -eq "")
@@ -33,6 +32,7 @@ docker create `
     -v "$pwd/demo-resources/resources.public:/home/samples/demo-resources.public" `
     -v "$pwd/demo-resources/resources.$memberName.private:/home/samples/demo-resources.private" `
     -v "$pwd/demo-resources/resources.$memberName.secret:/home/samples/demo-resources.secret" `
+    --network host `
     --name "$memberName-shell" `
     -it $imageName
 
