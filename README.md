@@ -6,6 +6,39 @@ These samples demonstrate usage of a **_confidential clean room_** (**CCR**) for
 - Confidential inference from sensitive data using a protected ML model. [Inference]
 - Confidential fine tuning of a protected ML model on protected datasets. [Training]
 
+<!-- simple-api [API]
+    litwareinc - hitcount app in, logs and telemetry out
+    fabrikam - file in, nothing out
+    contosso - file in, nothing out
+    consumer - API request match-word in, API response hitcount out
+
+simple-job [Job]
+    litwareinc - reverse app in, logs and telemetry out
+    fabrikam - input-file in, reversed-file out
+    contosso - NA
+    consumer - NA
+
+analytics [API]
+    litwareinc - query app and query documents in, logs and telemetry out
+    fabrikam - dataset in, nothing out
+    contosso - dataset in, nothing out
+    consumer - API request query-id, query-params in, API response query-result out
+
+inference [API]
+    litwareinc - inference app in, logs and telemetry out
+    fabrikam - model in, nothing out
+    contosso - NA
+    consumer - API request private-data in, API response inference-result out
+
+tuning [Job]
+    litwareinc - training app in, logs and telemetry out
+    fabrikam - initial-model in, tuned-model out
+    contosso - dataset in, nothing out
+    consumer - NA
+
+collab-common
+    pre - setup consortium for litwareinc, fabrikam & contosso
+    flow - contract and template proposals, idp -->
 
 # Table of Contents <!-- omit from toc -->
 <!--
@@ -26,11 +59,12 @@ These samples demonstrate usage of a **_confidential clean room_** (**CCR**) for
   - [Join the consortium (litware, fabrikam, contosso)](#join-the-consortium-litware-fabrikam-contosso)
 - [Publishing data](#publishing-data)
   - [KEK-DEK based encryption approach](#kek-dek-based-encryption-approach)
-  - [Encrypt and upload data](#encrypt-and-upload-data)
+  - [Encrypt and upload data (fabrikam, contosso)](#encrypt-and-upload-data-fabrikam-contosso)
 - [Authoring collaboration contract](#authoring-collaboration-contract)
-  - [Initializing a contract fragment](#initializing-a-contract-fragment)
-  - [Adding data sets to the contract](#adding-data-sets-to-the-contract)
-  - [Publisher: Setting up log collection](#publisher-setting-up-log-collection)
+  - [Initializing a contract fragment (litware, fabrikam, contosso)](#initializing-a-contract-fragment-litware-fabrikam-contosso)
+  - [Adding data sets to the contract (fabrikam, contosso)](#adding-data-sets-to-the-contract-fabrikam-contosso)
+  - [Adding application to the contract (litware)](#adding-application-to-the-contract-litware)
+  - [Setting up log collection (litware)](#setting-up-log-collection-litware)
   - [Share publisher clean room configuration with consumer](#share-publisher-clean-room-configuration-with-consumer)
   - [Application configuration and mount points](#application-configuration-and-mount-points)
   - [Mounting storage containers using Blobfuse2](#mounting-storage-containers-using-blobfuse2)
@@ -325,16 +359,21 @@ The above command will generate the public/private key pair. The member’s iden
 ## Create the CCF instance (operator)
 
 Run the below steps to create the CCF instance.
+
 ```powershell
-./scripts/create-consortium.ps1
+./scripts/start-consortium.ps1
 ```
 
 ## Invite members to the consortium (operator)
-For each member of the collaboration, the operator (who is hosting the CCF instance) needs to run the below commands:
+The _operator_ (who is hosting the CCF instance) registers each member of the collaboration with the consortium using the identity details generated [above](#member-identity-creation-litware-fabrikam-contosso) by running this command:
+
 
 ```powershell
 ./scripts/register-member.ps1
 ```
+
+> [!WARNING]
+> In the default sample environment, the containers for all participants have their `/home/samples/demo-resources.public` mapped to a single host directory, so this identity information would be available to all parties automatically once generated. If not, the identity details of all other parties needs to made available in `/home/samples/demo-resources.public` of the _operator's_ environment before running the registration command above.
 
 ## Join the consortium (litware, fabrikam, contosso)
 Once the collaborators have been added, they now need to activate their membership before they can participate in the collaboration. The operator must share the `ccfEndpoint` value to the collaborators so they can know which CCF instance to connect to.
@@ -342,6 +381,7 @@ Once the collaborators have been added, they now need to activate their membersh
 ```powershell
 ./scripts/confirm-member.ps1
 ```
+
 With the above steps the consortium creation that drives the creation and execution of the clean room is complete. We now proceed to preparing the datasets and making them available in the clean room.
 
 > [!NOTE]
@@ -355,7 +395,7 @@ The samples follow an envelope encryption model for encryption of data. For the 
 
 The parties can choose between a Managed HSM or a Premium Azure Key Vault for storing their encryption keys passing the `-kvType` paramter to the scripts below.
 
-## Encrypt and upload data
+## Encrypt and upload data (fabrikam, contosso)
 It is assumed that the collaborators have had out-of-band communication and have agreed on the data sets that will be shared. In these samples, the protected data is in the form of one or more files in one or more folders at each collaborators end.
 
 These dataset(s) in the form of files are encrypted using the [KEK-DEK](#kek-dek-based-encryption-approach) approach and uploaded into the the storage account created as part of [initializing the sample environment](#initializing-the-environment). Each folder in the source dataset would correspond to one Azure Blob storage container, and all files in the folder are uploaded as blobs to Azure Storage using specified encryption mode - [client-side encryption]() / server-side encryption using [customer provided key](https://learn.microsoft.com/azure/storage/blobs/encryption-customer-provided-keys). Only one symmetric key (DEK) is created per folder (blob storage container).
@@ -377,6 +417,7 @@ sequenceDiagram
 ```
 
 The following command initializes datastores and uploads encrypted datasets required for executing the samples:
+
 ```powershell
 $scenario = "analytics"
 
@@ -392,7 +433,7 @@ $scenario = "analytics"
 
 Every party participating in the collaboration authors their respective contract fragment independently. In these samples, the collaborators share their respective fragments with the _operator_ who merges them into a collaboration contract.
 
-## Initializing a contract fragment
+## Initializing a contract fragment (litware, fabrikam, contosso)
 
 The following command initializes the contract fragement for a given scenario:
 
@@ -415,7 +456,7 @@ specification:
 
 ``` -->
 
-## Adding data sets to the contract
+## Adding data sets to the contract (fabrikam, contosso)
 
 The following command adds details about the datastores to be accessed by the clean room and their mode (source/sink) to the contract fragment:
 
@@ -430,14 +471,27 @@ The following command adds details about the datastores to be accessed by the cl
 > 
 > ![alt text](./assets/add-datasource-error.png) -->
 
-## Publisher: Setting up log collection
-In this collabration say the consumer wants to inspect both the infrastructure and application logs once clean room finishes execution. But the publisher has a concern that sensitive information might leak out via logs and hence wants to inspect the log files before the consumer gets them. This can be achieved by using a storage account that is under the control of the publisher as the destination for the execution logs. These log files will be encrypted and written out to Azure storage with a key that is in the publisher's control. The publisher can then download and decrypt these logs, inspect them and if satisfied can share these with the consumer.
+## Adding application to the contract (litware)
 
-The below step configures the storage account endpoint details for collecting the application logs. Actual download of the logs happens later on.
+The following command adds details about the application to be executed within the clean room to the contract fragment:
+
 ```powershell
-# $result below refers to the output of the prepare-resources.ps1 that was run earlier.
-./scripts/config-telemetry.ps1 -scenario $scenario
+./demos/$scenario/add-specification-application.ps1
 ```
+
+## Setting up log collection (litware)
+The below step configures the storage account endpoint details for collecting the application logs:
+
+```powershell
+./scripts/add-specification-telemetry.ps1 -scenario $scenario
+```
+
+The actual download of the logs happens later on in the flow.
+
+> [!TIP]
+> In these samples, _litware_ provisions the storage resources to be used by the clean room for exporting any telemetry and logs from the clean room during/after execution, and _fabrikam_ and _contosso_ accept the same.
+> 
+> If any party, say _fabrikam_ were to have a concern that sensitive information might leak out via logs and hence need to inspect the log files before the consumer gets them, then the telemetry configuration can be achieved by that party using a storage account under their control as the destination for the execution logs. The log files would then be encrypted and written out to Azure storage with a key that is in _fabrikam's_ control, who can then download and decrypt these logs, inspect them and only share them with _litware_ if satisfied.
 
 ## Share publisher clean room configuration with consumer
 For the consumer to configure their application to access the data from the publisher it needs to know the details about the datasources that have been prepared by the publisher. Eg the consumer needs to refer to the individual datasources by their name when specifying where to mount each datasource in the container. The publisher needs to share the `publisher-config` file with the consumer.

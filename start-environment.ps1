@@ -8,17 +8,18 @@ param(
 )
 
 # (TODO) Cut across to prebuild docker image once we setup the repository.
-if (!(docker image ls $imageName 2> $null)) { 
+$localImage = (docker image ls $imageName --format 'json') | ConvertFrom-Json
+if ($null -eq $localImage.ID) { 
     $dockerArgs = "image build -t $imageName -f ./docker/Dockerfile.multi-party-collab `".`""
 
     if ($customCliExtension)
     {
         $dockerArgs += " --build-arg EXTENSION_SOURCE=local"
     }
-    
+
+    Write-Host "docker $dockerArgs"
     Start-Process docker $dockerArgs
 }
-
 
 if ($resourceGroup -eq "")
 {
