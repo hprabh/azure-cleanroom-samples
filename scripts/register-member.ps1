@@ -1,11 +1,13 @@
 param(
     [string]$memberName = "$env:MEMBER_NAME",
-    [string]$collaborators = ('litware', 'fabrikam', 'contosso'),
+    [string[]]$collaborators = ('litware', 'fabrikam', 'contosso'),
     [string]$publicFolder = "./demo-resources.public"
 )
 
 foreach ($collaboratorName in $collaborators)
 {
+    Write-Host "Registering member '$collaboratorName'"
+
     # Makes a proposal for adding the new member.
     $proposalId = (az cleanroom governance member add `
         --certificate $publicFolder/$($collaboratorName)_cert.pem `
