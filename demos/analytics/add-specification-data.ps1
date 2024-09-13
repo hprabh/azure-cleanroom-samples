@@ -4,9 +4,15 @@ param(
     [string]$cleanroomConfig = "./demo-resources.private/$env:RESOURCE_GROUP-analytics.generated.json",
     [string]$resourceConfig = "./demo-resources.private/$env:RESOURCE_GROUP.generated.json",
     [string]$datastoreConfig = "./demo-resources.private/datastores.config",
-    [string]$datastoreDir = "./demo-resources.private/datastores",
-
+    [string]$datastoreDir = "./demo-resources.private/datastores"
 )
+
+if (-not (("fabrikam", "contosso") -contains $persona))
+{
+    Write-Host "No action required for persona '$persona' in this scenario."
+    return
+}
+
 $datastoreName = "analytics-$persona-input"
 $datasourceName = "$persona-input"
 

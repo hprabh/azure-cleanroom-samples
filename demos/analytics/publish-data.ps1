@@ -8,6 +8,12 @@ param(
     [string]$datastoreDir = "./demo-resources.private/datastores"
 )
 
+if (-not (("fabrikam", "contosso") -contains $persona))
+{
+    Write-Host "No action required for persona '$persona' in this scenario."
+    return
+}
+
 if ($sa -eq "")
 {
     $initResult = Get-Content $resourceConfig | ConvertFrom-Json

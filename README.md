@@ -426,7 +426,7 @@ $scenario = "analytics"
 # Data publisher persona is picked from $env:MEMBER_NAME by default, use -persona to override.
 # Storage account is picked from ./demo-resources.private/$env:RESOURCE_GROUP.generated.json by default, use -sa to override.
 #
-./demos/$scenario/publish-data.ps1
+pwsh ./demos/$scenario/publish-data.ps1
 ```
 
 # Authoring collaboration contract
@@ -461,7 +461,7 @@ specification:
 The following command adds details about the datastores to be accessed by the clean room and their mode (source/sink) to the contract fragment:
 
 ```powershell
-./demos/$scenario/add-specification-data.ps1
+pwsh ./demos/$scenario/add-specification-data.ps1
 ```
 
 <!-- The above steps captures the information related to the datasets provided, their URLs in the storage accounts and encryption key information in the `publisher-config` file. This file would be exported later and shared with the consumer to let them know the datsources the publisher is sharing via the clean room.
@@ -476,7 +476,7 @@ The following command adds details about the datastores to be accessed by the cl
 The following command adds details about the application to be executed within the clean room to the contract fragment:
 
 ```powershell
-./demos/$scenario/add-specification-application.ps1
+pwsh ./demos/$scenario/add-specification-application.ps1
 ```
 
 ## Setting up log collection (litware)

@@ -5,6 +5,7 @@ param(
 
     [string]$resourceConfig = "./demo-resources.private/$env:RESOURCE_GROUP.generated.json",
     [string]$resourceGroup = "$env:RESOURCE_GROUP",
+    [string]$cleanroomConfig = "./demo-resources.public/$env:MEMBER_NAME-$scenario.config",
     [string]$outDir = "./demo-resources.private"
 )
 
@@ -12,14 +13,13 @@ param(
 
 $initResult = Get-Content $resourceConfig | ConvertFrom-Json
 
-$cleanroom_config_file = "$outDir/$resourceGroup-$scenario.config"
 az cleanroom config init `
-    --cleanroom-config $cleanroom_config_file
+    --cleanroom-config $cleanroomConfig
 
 az cleanroom config set-kek `
     --kek-key-vault $initResult.kek.kv.id `
     --maa-url $initResult.maa_endpoint `
-    --cleanroom-config $cleanroom_config_file
+    --cleanroom-config $cleanroomConfig
 
 $managedIdentityName = "$MANAGED_IDENTITY_NAME_PREFIX-$scenario"
 $resourceGroup = $RESOURCE_GROUP
@@ -33,7 +33,7 @@ $configResult = @{
     mi         = @{}
 }
 
-$configResult.configFile = $cleanroom_config_file
+$configResult.configFile = $cleanroomConfig
 $configResult.mi = $managedIdentityResult
 
 $configResult | ConvertTo-Json -Depth 100 > "$outDir/$resourceGroup-$scenario.generated.json"
