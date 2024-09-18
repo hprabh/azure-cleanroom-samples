@@ -22,10 +22,10 @@ az cleanroom config add-application `
              "src=contosso-input,dst=/mnt/remote/contosso-input" `
     --env-vars STORAGE_PATH_1=/mnt/remote/fabrikam-input `
                STORAGE_PATH_2=/mnt/remote/contosso-input `
-    --ports 8310 `
     --cpu 0.5 `
     --memory 4
 
-az cleanroom config set-network-policy `
-    --allow-all `
-    --cleanroom-config $cleanroomConfigResult.configFile
+az cleanroom config add-application-endpoint `
+    --cleanroom-config $cleanroomConfigResult.configFile `
+    --application-name demos-analytics-app `
+    --port 8310

@@ -3,6 +3,7 @@ param(
     [ValidateSet("analytics")]
     [string]$scenario,
 
+    [string]$persona = "$env:MEMBER_NAME",
     [string]$resourceConfig = "./demo-resources.private/$env:RESOURCE_GROUP.generated.json",
     [string]$resourceGroup = "$env:RESOURCE_GROUP",
     [string]$cleanroomConfig = "./demo-resources.public/$env:MEMBER_NAME-$scenario.config",
@@ -27,6 +28,13 @@ Write-Host "Creating managed identity $managedIdentityName in resource group $re
 $managedIdentityResult = (az identity create `
         --name $managedIdentityName `
         --resource-group $resourceGroup) | ConvertFrom-Json
+
+az cleanroom config add-identity az-federated `
+    --cleanroom-config $cleanroomConfig `
+    -n "$persona-identity" `
+    --client-id $managedIdentityResult.clientId `
+    --tenant-id $managedIdentityResult.tenantId `
+    --backing-identity cleanroom_cgs_oidc
 
 $configResult = @{
     configFile = ""

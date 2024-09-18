@@ -19,10 +19,10 @@ $datasourceName = "$persona-input"
 $cleanroomConfigResult = Get-Content $cleanroomConfig | ConvertFrom-Json
 $resourceConfigResult = Get-Content $resourceConfig | ConvertFrom-Json
 
-az cleanroom config add-datasource-v2 `
-    --cleanroom-config-file $cleanroomConfigResult.configFile `
+az cleanroom config add-datasource `
+    --cleanroom-config $cleanroomConfigResult.configFile `
     --name $datasourceName `
     --datastore-config $datastoreConfig `
     --datastore-name $datastoreName `
     --key-vault $resourceConfigResult.dek.kv.id `
-    --identity $cleanroomConfigResult.mi.id
+    --identity "$persona-identity"
