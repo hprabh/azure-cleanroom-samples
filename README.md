@@ -68,10 +68,9 @@ collab-common
 - [Finalizing collaboration contract](#finalizing-collaboration-contract)
   - [Proposing a governance contract (operator)](#proposing-a-governance-contract-operator)
   - [Agreeing upon the contract (litware, fabrikam, contosso)](#agreeing-upon-the-contract-litware-fabrikam-contosso)
-  - [Propose ARM template, CCE policy and log collection](#propose-arm-template-cce-policy-and-log-collection)
-  - [Accept ARM template, CCE policy and logging proposals](#accept-arm-template-cce-policy-and-logging-proposals)
-  - [Setup access for the clean room](#setup-access-for-the-clean-room)
-    - [Setup access as publisher](#setup-access-as-publisher)
+  - [Propose ARM template, CCE policy and log collection (operator)](#propose-arm-template-cce-policy-and-log-collection-operator)
+  - [Accept ARM template, CCE policy and logging proposals (litware, fabrikam, contosso)](#accept-arm-template-cce-policy-and-logging-proposals-litware-fabrikam-contosso)
+  - [Configure resource access for clean room (litware, fabrikam, contosso)](#configure-resource-access-for-clean-room-litware-fabrikam-contosso)
     - [Setup access as consumer](#setup-access-as-consumer)
 - [Using the clean room](#using-the-clean-room)
   - [Deploy clean room](#deploy-clean-room)
@@ -573,7 +572,7 @@ The collaborating parties can now query the governance service to get the propos
 ```
 
 
-## Propose ARM template, CCE policy and log collection
+## Propose ARM template, CCE policy and log collection (operator)
 Once the contract is accepted by all the collaborators, the _operator_ generates the artefacts required for deploying a _*CCR*_ instance for the contained clean room specification using Azure Confidential Container Instances ([_C-ACI_](https://learn.microsoft.com/azure/container-instances/container-instances-confidential-overview)) and proposes them to the consortium.
 
 
@@ -594,8 +593,8 @@ Once the contract is accepted by all the collaborators, the _operator_ generates
 > [!TIP]
 > The samples take advantage of pre-calculated CCE policy fragments when computing the clean room policy. If desired, the policy can be computed afresh by setting the `securityPolicy` parameter to `generate` or `generate-debug`. Note that the command will take longer in this case as it invokes `az confcom acipolicygen` internally which takes 10-15 minutes to finish.
 
-## Accept ARM template, CCE policy and logging proposals
-Once the *ARM template* and *CCE policy* proposals are available in the consortium, the collaborating parties can validate and vote on these proposals. In these samples, we accept these proposals without any verification.
+## Accept ARM template, CCE policy and logging proposals (litware, fabrikam, contosso)
+Once the *ARM template* and *CCE policy* proposals are available in the consortium, the collaborating parties validate and vote on these proposals. In these samples, we accept these proposals without any verification.
 
 
 ```powershell
@@ -603,47 +602,45 @@ Once the *ARM template* and *CCE policy* proposals are available in the consorti
 ```
 
 
-## Setup access for the clean room
-Both the publisher and the consumer need to give access to the clean room so that the clean room environment can access resources in their respective tenants. To do this first the the DEKs that were created for dataset encryption are now wrapped using a KEK. The KEK is uploaded in Key Vault and configured with a secure key release (SKR) policy while the wrapped-DEK is saved as a secret in Key Vault.
+## Configure resource access for clean room (litware, fabrikam, contosso)
+All the collaborating parties need to give access to the clean room so that the clean room environment can access resources in their respective tenants.
 
-Further the managed identities (created earlier as part of the dataset preparation) is given access to resources and then we create federated credentials on the managed identity. The federated credential allows the clean room to get the managed identity access token during execution.
+The DEKs that were created for dataset encryption as part of [data publishing](#publishing-data) are now wrapped using a KEK generated for each contract. The KEK is uploaded in Key Vault and configured with a secure key release (SKR) policy while the wrapped-DEK is saved as a secret in Key Vault.
 
-The flow below is executed by both the publisher and the consumer in their respective Azure tenants.
+The managed identities created earlier as part of [authoring the contract](#authoring-collaboration-contract) are given access to resources, and a federated credential is setup for these managed identities using the CGS OIDC identity provider. This federated credential allows the clean room to obtain an attestation based managed identity access token during execution.
+
+The flow below is executed by all the collaborators in their respective Azure tenants:
+
+
+```powershell
+./scripts/contract/setup-access.ps1 -contractId "collab-$scenario"
+```
+
 
 ```mermaid
 sequenceDiagram
     title Clean room access setup
-    participant m0 as Publisher/Consumer
+    participant m0 as Collaborator
     participant akv as Azure Key Vault
     participant storage as Azure Storage
     participant mi as ManagedIdentity
 
     m0->>m0: Create KEK
-    loop every DEK
-        m0->>m0: Wrap DEK with KEK
-        m0->>akv: Save wrapped-DEK as secret
-    end
     m0->>akv: Save KEK with SKR policy
+
+    loop every DEK
+      m0->>m0: Wrap DEK with KEK
+      m0->>akv: Save wrapped-DEK as secret
+    end
+
     m0->>storage: Assign storage account permissions to MI
     m0->>akv: Assign KV permissions to MI
+
     m0->>m0: Setup OIDC issuer endpoint
     m0->>mi: Setup federated credential on MI
 ```
-### Setup access as publisher
-Run the following as the publisher.
-```powershell
-# Creates a KEK with SKR policy, wraps DEKs with the KEK and put in kv.
-az cleanroom config wrap-deks `
-    --contract-id $contractId `
-    --cleanroom-config $publisherConfig `
-    --governance-client "publisher-client"
 
-# Setup OIDC issuer and managed identity access to storage/KV in publisher tenant.
-./setup-access.ps1 `
-    -resourceGroup $publisherResourceGroup `
-    -contractId $contractId  `
-    -governanceClient "publisher-client"
-```
+
 > [!TIP]
 > `setup-access` step might fail with the below error in case the RBAC permissions on the storage account created by the it has not been applied yet by the time its attempting to create a storage account. Try the command again after a while.
 > 

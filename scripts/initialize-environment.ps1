@@ -35,6 +35,7 @@ $result = @{
     kek          = @{}
     dek          = @{}
     sa           = @{}
+    oidcsa       = @{}
     maa_endpoint = ""
 }
 
@@ -70,6 +71,12 @@ $storageAccount = Create-Storage-Resources `
     -storageAccountName @($STORAGE_ACCOUNT_NAME) `
     -objectId $objectId
 $result.sa = $storageAccount
+
+$storageAccount = Create-Storage-Resources `
+    -resourceGroup $resourceGroup `
+    -storageAccountName @($OIDC_STORAGE_ACCOUNT_NAME) `
+    -objectId $objectId
+$result.oidcsa = $storageAccount
 
 $result.maa_endpoint = $MAA_URL
 

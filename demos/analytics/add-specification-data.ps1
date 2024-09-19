@@ -6,10 +6,9 @@ param(
 
     [string]$privateDir = "./demo-resources.private",
 
-    [string]$cleanroomConfig = "$privateDir/$resourceGroup-analytics.generated.json",
+    [string]$collabConfig = "$privateDir/$resourceGroup-analytics.generated.json",
     [string]$resourceConfig = "$privateDir/$resourceGroup.generated.json",
-    [string]$datastoreConfig = "$privateDir/datastores.config",
-    [string]$datastoreDir = "$privateDir/datastores"
+    [string]$datastoreConfig = "$privateDir/datastores.config"
 )
 
 if (-not (("fabrikam", "contosso") -contains $persona))
@@ -21,11 +20,11 @@ if (-not (("fabrikam", "contosso") -contains $persona))
 $datastoreName = "analytics-$persona-input"
 $datasourceName = "$persona-input"
 
-$cleanroomConfigResult = Get-Content $cleanroomConfig | ConvertFrom-Json
+$collabConfigResult = Get-Content $collabConfig | ConvertFrom-Json
 $resourceConfigResult = Get-Content $resourceConfig | ConvertFrom-Json
 
 az cleanroom config add-datasource `
-    --cleanroom-config $cleanroomConfigResult.configFile `
+    --cleanroom-config $collabConfigResult.configFile `
     --name $datasourceName `
     --datastore-config $datastoreConfig `
     --datastore-name $datastoreName `

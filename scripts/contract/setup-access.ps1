@@ -7,30 +7,40 @@ param(
     [string]$resourceGroup = "$env:RESOURCE_GROUP",
 
     [string]$privateDir = "./demo-resources.private",
+    [string]$oidcContainerName = "cgs-oidc",
 
+    [string]$datastoreConfig = "$privateDir/datastores.config",
+    [string]$resourceConfig = "$privateDir/$resourceGroup.generated.json",
     [string]$collabConfig = "$privateDir/$resourceGroup-$scenario.generated.json",
     [string]$contractId = "collab-$scenario" # A unique identifier to refer to this collaboration.
 )
 
 $ErrorActionPreference = 'Stop'
-. $privateDir/names.generated.ps1
 
 Import-Module $PSScriptRoot/../azure-helpers.psm1 -Force -DisableNameChecking
+$collabConfigResult = (Get-Content $collabConfig | ConvertFrom-Json)
+$resourceConfigResult = Get-Content $resourceConfig | ConvertFrom-Json
 
+#
+# Create a KEK with SKR policy, wrap DEKs with the KEK and put in kv.
+#
+az cleanroom config wrap-deks `
+    --contract-id $contractId `
+    --cleanroom-config $collabConfigResult.configFile `
+    --governance-client $cgsClient
+
+#
+# Setup managed identity access to storage/KV in collaborator tenant.
+#
 $isMhsm = $(-not $($MHSM_NAME -eq ""))
-$configResult = (Get-Content $collabConfig | ConvertFrom-Json)
-$managedIdentity = (az identity show --name $configResult.mi.name --resource-group $resourceGroup | ConvertFrom-Json)
+$managedIdentity = (az identity show --name $collabConfigResult.mi.name --resource-group $resourceGroup | ConvertFrom-Json)
 CheckLastExitCode
 
 Write-Host "Assigning permissions to the managed identity on the storage account"
-$storageAccount = (az storage account show `
-        --name $STORAGE_ACCOUNT_NAME `
-        --resource-group $resourceGroup) | ConvertFrom-Json
-
 # Cleanroom needs both read/write permissions on storage account, hence assigning Storage Blob Data Contributor.
 az role assignment create `
     --role "Storage Blob Data Contributor" `
-    --scope $storageAccount.id `
+    --scope $resourceConfigResult.sa.id `
     --assignee-object-id $managedIdentity.principalId `
     --assignee-principal-type ServicePrincipal
 CheckLastExitCode
@@ -87,7 +97,9 @@ az role assignment create `
     --assignee-principal-type ServicePrincipal
 CheckLastExitCode
 
-# Set OIDC issuer.
+#
+# Setup OIDC issuer and federated credential on managed identity.
+#
 $currentUser = (az account show) | ConvertFrom-Json
 $tenantId = $currentUser.tenantid
 $tenantData = (az cleanroom governance oidc-issuer show `
@@ -99,38 +111,18 @@ if ($null -ne $tenantData -and $tenantData.tenantId -eq $tenantId) {
 }
 else {
     Write-Host "Setting up OIDC issuer for the tenant $tenantId"
-    $storageAccountResult = (az storage account create `
-            --resource-group "$resourceGroup" `
-            --allow-shared-key-access false `
-            --name "${OIDC_STORAGE_ACCOUNT_NAME}" `
-            --allow-blob-public-access true) | ConvertFrom-Json
-
-    $objectId = GetLoggedInEntityObjectId
-    Write-Host "Assigning 'Storage Blob Data Contributor' permissions to logged in user"
-    az role assignment create `
-        --role "Storage Blob Data Contributor" `
-        --scope $storageAccountResult.id `
-        --assignee-object-id $objectId `
-        --assignee-principal-type $(Get-Assignee-Principal-Type)
-    CheckLastExitCode
-
-    if ($env:GITHUB_ACTIONS -eq "true") {
-        $sleepTime = 60
-        Write-Host "Waiting for $sleepTime seconds for permissions to get applied"
-        Start-Sleep -Seconds $sleepTime
-    }
 
     az storage container create `
-        --name "${OIDC_CONTAINER_NAME}" `
-        --account-name "${OIDC_STORAGE_ACCOUNT_NAME}" `
+        --name $oidcContainerName `
+        --account-name $resourceConfigResult.oidcsa.name `
         --public-access blob `
         --auth-mode login
     CheckLastExitCode
 
     @"
 {
-"issuer": "https://${OIDC_STORAGE_ACCOUNT_NAME}.blob.core.windows.net/${OIDC_CONTAINER_NAME}",
-"jwks_uri": "https://${OIDC_STORAGE_ACCOUNT_NAME}.blob.core.windows.net/${OIDC_CONTAINER_NAME}/openid/v1/jwks",
+"issuer": "https://$($resourceConfigResult.oidcsa.name).blob.core.windows.net/$oidcContainerName",
+"jwks_uri": "https://$($resourceConfigResult.oidcsa.name).blob.core.windows.net/$oidcContainerName/openid/v1/jwks",
 "response_types_supported": [
 "id_token"
 ],
@@ -144,10 +136,10 @@ else {
 "@ > $privateDir/openid-configuration.json
 
     az storage blob upload `
-        --container-name "${OIDC_CONTAINER_NAME}" `
+        --container-name $oidcContainerName `
         --file $privateDir/openid-configuration.json `
         --name .well-known/openid-configuration `
-        --account-name "${OIDC_STORAGE_ACCOUNT_NAME}" `
+        --account-name $resourceConfigResult.oidcsa.name `
         --overwrite `
         --auth-mode login
     CheckLastExitCode
@@ -157,17 +149,17 @@ else {
     curl -s -k $url | jq > $privateDir/jwks.json
 
     az storage blob upload `
-        --container-name "${OIDC_CONTAINER_NAME}" `
+        --container-name $oidcContainerName `
         --file $privateDir/jwks.json `
         --name openid/v1/jwks `
-        --account-name "${OIDC_STORAGE_ACCOUNT_NAME}" `
+        --account-name $resourceConfigResult.oidcsa.name `
         --overwrite `
         --auth-mode login
     CheckLastExitCode
 
     az cleanroom governance oidc-issuer set-issuer-url `
         --governance-client $cgsClient `
-        --url "https://${OIDC_STORAGE_ACCOUNT_NAME}.blob.core.windows.net/${OIDC_CONTAINER_NAME}"
+        --url "https://$($resourceConfigResult.oidcsa.name).blob.core.windows.net/$oidcContainerName"
     $tenantData = (az cleanroom governance oidc-issuer show `
             --governance-client $cgsClient `
             --query "tenantData" | ConvertFrom-Json)
@@ -177,7 +169,7 @@ else {
 Write-Host "Setting up federation on managed identity with issuerUrl $issuerUrl and subject $contractId"
 az identity federated-credential create `
     --name "$contractId-federation" `
-    --identity-name $configResult.mi.name `
+    --identity-name $collabConfigResult.mi.name `
     --resource-group $resourceGroup `
     --issuer $issuerUrl `
     --subject $contractId
