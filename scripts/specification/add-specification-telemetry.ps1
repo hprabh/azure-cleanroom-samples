@@ -4,10 +4,15 @@ param(
     [string]$scenario,
 
     [string]$persona = "$env:MEMBER_NAME",
-    [string]$cleanroomConfig = "./demo-resources.private/$env:RESOURCE_GROUP-$scenario.generated.json",
-    [string]$resourceConfig = "./demo-resources.private/$env:RESOURCE_GROUP.generated.json",
-    [string]$datastoreConfig = "./demo-resources.private/datastores.config",
-    [string]$keysDir = "./demo-resources.secret/keys"
+    [string]$resourceGroup = "$env:RESOURCE_GROUP",
+
+    [string]$privateDir = "./demo-resources.private",
+    [string]$secretDir = "./demo-resources.secret",
+
+    [string]$cleanroomConfig = "$privateDir/$resourceGroup-$scenario.generated.json",
+    [string]$resourceConfig = "$privateDir/$resourceGroup.generated.json",
+    [string]$datastoreConfig = "$privateDir/datastores.config",
+    [string]$keysDir = "$secretDir/keys"
 )
 
 $cleanroomConfigResult = Get-Content $cleanroomConfig | ConvertFrom-Json

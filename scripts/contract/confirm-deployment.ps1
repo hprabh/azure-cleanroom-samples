@@ -1,6 +1,7 @@
 param(
     [Parameter(Mandatory = $true)]
     [string]$contractId,
+
     [string]$cgsClient = "$env:MEMBER_NAME-client"
 )
 

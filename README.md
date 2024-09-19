@@ -70,7 +70,6 @@ collab-common
   - [Agreeing upon the contract (litware, fabrikam, contosso)](#agreeing-upon-the-contract-litware-fabrikam-contosso)
   - [Propose ARM template, CCE policy and log collection](#propose-arm-template-cce-policy-and-log-collection)
   - [Accept ARM template, CCE policy and logging proposals](#accept-arm-template-cce-policy-and-logging-proposals)
-    - [Verify and accept as publisher](#verify-and-accept-as-publisher)
   - [Setup access for the clean room](#setup-access-for-the-clean-room)
     - [Setup access as publisher](#setup-access-as-publisher)
     - [Setup access as consumer](#setup-access-as-consumer)
@@ -334,7 +333,7 @@ sequenceDiagram
 A CCF member is identified by a public-key certificate used for client authentication and command signing. Each member of the collaboration creates their member identity by generating their public and private key pair.
 
 ```powershell
-./scripts/initialize-member.ps1
+./scripts/consortium/initialize-member.ps1
 ```
 
 Above command shows output similar to below.
@@ -358,7 +357,7 @@ The above command will generate the public/private key pair. The member’s iden
 Run the below steps to create the CCF instance.
 
 ```powershell
-./scripts/start-consortium.ps1
+./scripts/consortium/start-consortium.ps1
 ```
 
 ## Invite members to the consortium (operator)
@@ -366,7 +365,7 @@ The _operator_ (who is hosting the CCF instance) registers each member of the co
 
 
 ```powershell
-./scripts/register-member.ps1
+./scripts/consortium/register-member.ps1
 ```
 
 > [!WARNING]
@@ -376,7 +375,7 @@ The _operator_ (who is hosting the CCF instance) registers each member of the co
 Once the collaborators have been added, they now need to activate their membership before they can participate in the collaboration. The operator must share the `ccfEndpoint` value to the collaborators so they can know which CCF instance to connect to.
 
 ```powershell
-./scripts/confirm-member.ps1
+./scripts/consortium/confirm-member.ps1
 ```
 
 With the above steps the consortium creation that drives the creation and execution of the clean room is complete. We now proceed to preparing the datasets and making them available in the clean room.
@@ -435,7 +434,7 @@ The following command initializes the contract fragement for a given scenario:
 ```powershell
 $scenario = "analytics"
 
-./scripts/initialize-specification.ps1 -scenario $scenario
+./scripts/specification/initialize-specification.ps1 -scenario $scenario
 ```
 
 <!-- TODO: Update below with actual output. -->
@@ -491,7 +490,7 @@ The application container is configured to access protected data through the cor
 The following command adds details about the storage account endpoint details for collecting the application logs:
 
 ```powershell
-./scripts/add-specification-telemetry.ps1 -scenario $scenario
+./scripts/specification/add-specification-telemetry.ps1 -scenario $scenario
 ```
 
 The actual download of the logs happens later on in the flow.
@@ -554,142 +553,55 @@ sequenceDiagram
 
 ## Proposing a governance contract (operator)
 
-The following commands creates a contract in the governance service with the clean room specification yaml as its contents:
+The _operator_ merges all the contract fragments shared by the collaborators and proposes the resultant clean room specification yaml as the final contract.
+
 
 ```powershell
-# Generate the cleanroom config which contains all the datasources, sinks and applications that are
-# configured by both the producer and consumer.
-az cleanroom config view `
-    --cleanroom-config ./demo-resources.private/analysis.config `
-    --configs ./demo-resources.public/fabrikam-analysis.config ./demo-resources.public/contosso-analysis.config `
-    > ./demo-resources.public/analysis.cleanroom.config
-
-# Validate the contract structure before proposing.
-az cleanroom config validate --cleanroom-config ./demo-resources.public/analysis.cleanroom.config
-
-$contractId = "collab1" # A unique identifier to refer to this collaboration.
-$data = Get-Content -Raw ./demo-resources.public/analysis.cleanroom.config
-az cleanroom governance contract create `
-    --data "$data" `
-    --id $contractId `
-    --governance-client "$env:MEMBER_NAME-client"
-
-# Submitting a contract proposal.
-$version = (az cleanroom governance contract show `
-    --id $contractId `
-    --query "version" `
-    --output tsv `
-    --governance-client "$env:MEMBER_NAME-client")
-
-az cleanroom governance contract propose `
-    --version $version `
-    --id $contractId `
-    --query "proposalId" `
-    --output tsv `
-    --governance-client "$env:MEMBER_NAME-client"
+./scripts/contract/register-contract.ps1 -scenario $scenario
 ```
+
 
 > [!WARNING]
-> In the default sample environment, the containers for all participants have their `/home/samples/demo-resources.public` mapped to a single host directory, so the contract fragments would be available to all parties automatically once generated. If not, the fragments  of all other parties needs to made available in `/home/samples/demo-resources.public` of the _operator's_ environment before running the commands above.
+> In the default sample environment, the containers for all participants have their `/home/samples/demo-resources.public` mapped to a single host directory, so the contract fragments would be available to all parties automatically once generated. If not, the fragments  of all other parties needs to made available in `/home/samples/demo-resources.public` of the _operator's_ environment before running the command above.
 
 ## Agreeing upon the contract (litware, fabrikam, contosso)
-The collaborating parties can now query CCF to get the proposed contract, run their validations and accept or reject the contract. To achieve this:
+The collaborating parties can now query the governance service to get the proposed contract, run their validations and accept or reject the contract.
+
 
 ```powershell
-$contract = (az cleanroom governance contract show `
-    --id $contractId `
-    --governance-client "$env:MEMBER_NAME-client" | ConvertFrom-Json)
-
-# Inspect the contract details that is capturing the storage, application container and identity details.
-$contract.data
-
-# Accept it.
-az cleanroom governance contract vote `
-    --id $contractId `
-    --proposal-id $contract.proposalId `
-    --action accept `
-    --governance-client "$env:MEMBER_NAME-client"
+./scripts/contract/confirm-contract.ps1 -contractId "collab-$scenario"
 ```
+
 
 ## Propose ARM template, CCE policy and log collection
-Once the contract is accepted by both parties, the party deploying the clean room can now generate an [Azure Confidential Container Instance](https://learn.microsoft.com/azure/container-instances/container-instances-confidential-overview) ARM template along with the CCE policy. Once the ARM template is generated, the [Confidential Computing Enforcement (CCE) policy](https://learn.microsoft.com/en-us/azure/container-instances/container-instances-confidential-overview#confidential-computing-enforcement-policies) can be computed. The command below generates both the ARM template and CCE policy following the flow mentioned [here](https://learn.microsoft.com/azure/container-instances/container-instances-tutorial-deploy-confidential-containers-cce-arm). Run the following command:
-```powershell
-mkdir ./demo-resources.public/$contractId
+Once the contract is accepted by all the collaborators, the _operator_ generates the artefacts required for deploying a _*CCR*_ instance for the contained clean room specification using Azure Confidential Container Instances ([_C-ACI_](https://learn.microsoft.com/azure/container-instances/container-instances-confidential-overview)) and proposes them to the consortium.
 
-az cleanroom governance deployment generate `
-    --contract-id $contractId `
-    --governance-client "$env:MEMBER_NAME-client" `
-    --output-dir ./demo-resources.public/$contractId
-```
-> [!NOTE]
-> The above command invokes `az confcom acipolicygen` and takes around 10-15 minutes to finish.
-
-Once run, this creates the following files in the output directory specified above: 
- 1. `cleanroom-arm-template.json`. This is the ARM template that can be deployed. This has the base64 encoded CCE policy embedded in it.
- 2. `cleanroom-governance-policy.json`. This file contains the clean room policy which identifies this clean room when its under execution.
-
-Now propose the template and policy along with also submitting a proposal for enabling log collection.
 
 ```powershell
-az cleanroom governance deployment template propose `
-    --template-file ./demo-resources.public/$contractId/cleanroom-arm-template.json `
-    --contract-id $contractId `
-    --governance-client "$env:MEMBER_NAME-client"
-
-az cleanroom governance deployment policy propose `
-    --policy-file ./demo-resources.public/$contractId/cleanroom-governance-policy.json `
-    --contract-id $contractId `
-    --governance-client "$env:MEMBER_NAME-client"
-
-# Propose enabling log and telemetry collection during cleanroom execution.
-az cleanroom governance contract runtime-option propose `
-    --option logging `
-    --action enable `
-    --contract-id $contractId `
-    --governance-client "$env:MEMBER_NAME-client"
-
-az cleanroom governance contract runtime-option propose `
-    --option telemetry `
-    --action enable `
-    --contract-id $contractId `
-    --governance-client "$env:MEMBER_NAME-client"
+./scripts/contract/register-deployment.ps1 -contractId "collab-$scenario"
 ```
 
-The generated ARM template and CCE policy are raised as proposals in the governance service on the same contract that was accepted. The proposals can be inspected as follows:
-```powershell
-# Inspect the proposed deployment template.
-$proposalId = az cleanroom governance deployment template show `
-    --contract-id $contractId `
-    --governance-client "$env:MEMBER_NAME-client" `
-    --query "proposalIds[0]" `
-    --output tsv
+> [!TIP]
+> 
+> Two artefacts are required to [deploy](https://learn.microsoft.com/azure/container-instances/container-instances-tutorial-deploy-confidential-containers-cce-arm) C-ACI containers - the C-ACI ARM deployment template, and the Confidential Computing Enforcement Policy ([_CCE policy_](https://learn.microsoft.com/en-us/azure/container-instances/container-instances-confidential-overview#confidential-computing-enforcement-policies)) computed for this template.
+> 
+> The command generates these artefacts and proposes them to the governance service:
+> - The **_deployment_** proposal contains the ARM template (`cleanroom-arm-template.json`) which can be deployed for instantiating the clean room, and
+> - The **_policy_** proposal contains the clean room policy (`cleanroom-governance-policy.json`)  which identifies this clean room when its under execution
+> 
+> Proposals for enabling log collection are also submitted as part of this step.
 
-az cleanroom governance proposal show-actions `
-    --proposal-id $proposalId `
-    --query "actions[0].args.spec.data" `
-    --governance-client "$env:MEMBER_NAME-client"
-
-# Inspect the proposed cce policy.
-$proposalId = az cleanroom governance deployment policy show `
-    --contract-id $contractId `
-    --governance-client "$env:MEMBER_NAME-client" `
-    --query "proposalIds[0]" `
-    --output tsv
-
-az cleanroom governance proposal show-actions `
-    --proposal-id $proposalId `
-    --query "actions[0].args" `
-    --governance-client "$env:MEMBER_NAME-client"
-```
+> [!TIP]
+> The samples take advantage of pre-calculated CCE policy fragments when computing the clean room policy. If desired, the policy can be computed afresh by setting the `securityPolicy` parameter to `generate` or `generate-debug`. Note that the command will take longer in this case as it invokes `az confcom acipolicygen` internally which takes 10-15 minutes to finish.
 
 ## Accept ARM template, CCE policy and logging proposals
-Once the ARM template and CCE policy proposals are available, the remaining parties can validate and vote on these proposals. In this sample, we run a simple validation and accept the template and CCE policy.
+Once the *ARM template* and *CCE policy* proposals are available in the consortium, the collaborating parties can validate and vote on these proposals. In these samples, we accept these proposals without any verification.
 
-### Verify and accept as publisher
-Run the following as the publisher.
+
 ```powershell
-./scripts/accept-deployment-proposals.ps1 -contractId $contractId
+./scripts/contract/confirm-deployment.ps1 -contractId "collab-$scenario"
 ```
+
 
 ## Setup access for the clean room
 Both the publisher and the consumer need to give access to the clean room so that the clean room environment can access resources in their respective tenants. To do this first the the DEKs that were created for dataset encryption are now wrapped using a KEK. The KEK is uploaded in Key Vault and configured with a secure key release (SKR) policy while the wrapped-DEK is saved as a secret in Key Vault.

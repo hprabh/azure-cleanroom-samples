@@ -3,10 +3,14 @@ param(
     [ValidateSet("analytics")]
     [string]$scenario,
 
-    [string]$memberName = "$env:MEMBER_NAME",
     [string[]]$collaborators = ('litware', 'fabrikam', 'contosso'),
-    [string]$cleanroomConfig = "./demo-resources.public/$env:MEMBER_NAME-$scenario.config",
-    [string]$publicFolder = "./demo-resources.public"
+
+    [string]$cgsClient = "$env:MEMBER_NAME-client",
+
+    [string]$publicDir = "./demo-resources.public",
+
+    [string]$cleanroomConfig = "$publicFolder/finalized-$scenario.config",
+    [string]$contractId = "collab-$scenario" # A unique identifier to refer to this collaboration.
 )
 
 az cleanroom config init `
@@ -26,23 +30,22 @@ foreach ($collaboratorName in $collaborators)
 # Validate the contract structure before proposing.
 az cleanroom config validate --cleanroom-config $cleanroomConfig
 
-$contractId = "collab-$scenario" # A unique identifier to refer to this collaboration.
 $data = Get-Content -Raw $cleanroomConfig
 az cleanroom governance contract create `
     --data "$data" `
     --id $contractId `
-    --governance-client "$memberName-client"
+    --governance-client $cgsClient
 
 # Submitting a contract proposal.
 $version = (az cleanroom governance contract show `
     --id $contractId `
     --query "version" `
     --output tsv `
-    --governance-client "$memberName-client")
+    --governance-client $cgsClient)
 
 az cleanroom governance contract propose `
     --version $version `
     --id $contractId `
     --query "proposalId" `
     --output tsv `
-    --governance-client "$memberName-client"
+    --governance-client $cgsClient

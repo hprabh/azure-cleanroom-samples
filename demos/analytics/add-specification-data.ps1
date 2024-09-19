@@ -1,10 +1,15 @@
 param(
     [ValidateSet("fabrikam", "contosso")]
     [string]$persona = "$env:MEMBER_NAME",
-    [string]$cleanroomConfig = "./demo-resources.private/$env:RESOURCE_GROUP-analytics.generated.json",
-    [string]$resourceConfig = "./demo-resources.private/$env:RESOURCE_GROUP.generated.json",
-    [string]$datastoreConfig = "./demo-resources.private/datastores.config",
-    [string]$datastoreDir = "./demo-resources.private/datastores"
+
+    [string]$resourceGroup = "$env:RESOURCE_GROUP",
+
+    [string]$privateDir = "./demo-resources.private",
+
+    [string]$cleanroomConfig = "$privateDir/$resourceGroup-analytics.generated.json",
+    [string]$resourceConfig = "$privateDir/$resourceGroup.generated.json",
+    [string]$datastoreConfig = "$privateDir/datastores.config",
+    [string]$datastoreDir = "$privateDir/datastores"
 )
 
 if (-not (("fabrikam", "contosso") -contains $persona))

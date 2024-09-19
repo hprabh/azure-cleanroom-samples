@@ -4,13 +4,16 @@ param(
     [string]$scenario,
 
     [string]$persona = "$env:MEMBER_NAME",
-    [string]$resourceConfig = "./demo-resources.private/$env:RESOURCE_GROUP.generated.json",
     [string]$resourceGroup = "$env:RESOURCE_GROUP",
-    [string]$cleanroomConfig = "./demo-resources.public/$env:MEMBER_NAME-$scenario.config",
-    [string]$outDir = "./demo-resources.private"
+
+    [string]$privateDir = "./demo-resources.private",
+    [string]$publicDir = "./demo-resources.public",
+
+    [string]$resourceConfig = "$privateDir/$resourceGroup.generated.json",
+    [string]$cleanroomConfig = "$publicDir/$persona-$scenario.config"
 )
 
-. $outDir/names.generated.ps1
+. $privateDir/names.generated.ps1
 
 $initResult = Get-Content $resourceConfig | ConvertFrom-Json
 
@@ -44,6 +47,6 @@ $configResult = @{
 $configResult.configFile = $cleanroomConfig
 $configResult.mi = $managedIdentityResult
 
-$configResult | ConvertTo-Json -Depth 100 > "$outDir/$resourceGroup-$scenario.generated.json"
+$configResult | ConvertTo-Json -Depth 100 > "$privateDir/$resourceGroup-$scenario.generated.json"
 
 return $configResult

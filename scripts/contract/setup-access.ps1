@@ -1,30 +1,23 @@
 param(
     [Parameter(Mandatory = $true)]
-    [string]$contractId,
-
-    [Parameter(Mandatory = $true)]
     [ValidateSet("analytics")]
     [string]$scenario,
 
+    [string]$cgsClient = "$env:MEMBER_NAME-client",
     [string]$resourceGroup = "$env:RESOURCE_GROUP",
-    [string]$collabConfig = "./demo-resources.private/$env:RESOURCE_GROUP-$scenario.generated.json",
-    [string]$outDir = "./demo-resources.private",
-    [string]$governanceClient = "$env:MEMBER_NAME-client"
+
+    [string]$privateDir = "./demo-resources.private",
+
+    [string]$collabConfig = "$privateDir/$resourceGroup-$scenario.generated.json",
+    [string]$contractId = "collab-$scenario" # A unique identifier to refer to this collaboration.
 )
 
 $ErrorActionPreference = 'Stop'
-. $outDir/names.generated.ps1
+. $privateDir/names.generated.ps1
 
-Import-Module $PSScriptRoot/azure-helpers.psm1 -Force -DisableNameChecking
+Import-Module $PSScriptRoot/../azure-helpers.psm1 -Force -DisableNameChecking
 
 $isMhsm = $(-not $($MHSM_NAME -eq ""))
-if ($isMhsm) {
-    $keyVaultName = $MHSM_NAME
-}
-else {
-    $keyVaultName = $KEYVAULT_NAME
-}
-
 $configResult = (Get-Content $collabConfig | ConvertFrom-Json)
 $managedIdentity = (az identity show --name $configResult.mi.name --resource-group $resourceGroup | ConvertFrom-Json)
 CheckLastExitCode
@@ -98,7 +91,7 @@ CheckLastExitCode
 $currentUser = (az account show) | ConvertFrom-Json
 $tenantId = $currentUser.tenantid
 $tenantData = (az cleanroom governance oidc-issuer show `
-        --governance-client $governanceClient `
+        --governance-client $cgsClient `
         --query "tenantData" | ConvertFrom-Json)
 if ($null -ne $tenantData -and $tenantData.tenantId -eq $tenantId) {
     Write-Host -ForegroundColor Yellow "OIDC issuer already set for the tenant, skipping."
@@ -148,24 +141,24 @@ else {
 "RS256"
 ]
 }
-"@ > $outDir/openid-configuration.json
+"@ > $privateDir/openid-configuration.json
 
     az storage blob upload `
         --container-name "${OIDC_CONTAINER_NAME}" `
-        --file $outDir/openid-configuration.json `
+        --file $privateDir/openid-configuration.json `
         --name .well-known/openid-configuration `
         --account-name "${OIDC_STORAGE_ACCOUNT_NAME}" `
         --overwrite `
         --auth-mode login
     CheckLastExitCode
 
-    $ccfEndpoint = (az cleanroom governance client show --name $governanceClient | ConvertFrom-Json)
+    $ccfEndpoint = (az cleanroom governance client show --name $cgsClient | ConvertFrom-Json)
     $url = "$($ccfEndpoint.ccfEndpoint)/app/oidc/keys"
-    curl -s -k $url | jq > $outDir/jwks.json
+    curl -s -k $url | jq > $privateDir/jwks.json
 
     az storage blob upload `
         --container-name "${OIDC_CONTAINER_NAME}" `
-        --file $outDir/jwks.json `
+        --file $privateDir/jwks.json `
         --name openid/v1/jwks `
         --account-name "${OIDC_STORAGE_ACCOUNT_NAME}" `
         --overwrite `
@@ -173,10 +166,10 @@ else {
     CheckLastExitCode
 
     az cleanroom governance oidc-issuer set-issuer-url `
-        --governance-client $governanceClient `
+        --governance-client $cgsClient `
         --url "https://${OIDC_STORAGE_ACCOUNT_NAME}.blob.core.windows.net/${OIDC_CONTAINER_NAME}"
     $tenantData = (az cleanroom governance oidc-issuer show `
-            --governance-client $governanceClient `
+            --governance-client $cgsClient `
             --query "tenantData" | ConvertFrom-Json)
     $issuerUrl = $tenantData.issuerUrl
 }

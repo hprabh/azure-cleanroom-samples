@@ -1,11 +1,17 @@
 param(
     [ValidateSet("fabrikam", "contosso")]
     [string]$persona = "$env:MEMBER_NAME",
+
+    [string]$resourceGroup = "$env:RESOURCE_GROUP",
+
+    [string]$privateDir = "./demo-resources.private",
+    [string]$secretDir = "./demo-resources.secret",
     [string]$sa = "",
-    [string]$resourceConfig = "./demo-resources.private/$env:RESOURCE_GROUP.generated.json",
-    [string]$keyStore = "./demo-resources.secret/keys",
-    [string]$datastoreConfig = "./demo-resources.private/datastores.config",
-    [string]$datastoreDir = "./demo-resources.private/datastores"
+
+    [string]$resourceConfig = "$privateDir/$resourceGroup.generated.json",
+    [string]$keyStore = "$secretDir/keys",
+    [string]$datastoreConfig = "$privateDir/datastores.config",
+    [string]$datastoreDir = "$privateDir/datastores"
 )
 
 if (-not (("fabrikam", "contosso") -contains $persona))

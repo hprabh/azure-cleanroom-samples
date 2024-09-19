@@ -7,7 +7,7 @@ param(
 
 $contract = (az cleanroom governance contract show `
     --id $contractId `
-    --governance-client "$memberName-client" | ConvertFrom-Json)
+    --governance-client $cgsClient | ConvertFrom-Json)
 
 # Inspect the contract details that is capturing the storage, application container and identity details.
 $contract.data
@@ -17,4 +17,4 @@ az cleanroom governance contract vote `
     --id $contractId `
     --proposal-id $contract.proposalId `
     --action accept `
-    --governance-client "$memberName-client"
+    --governance-client $cgsClient

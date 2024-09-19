@@ -1,12 +1,15 @@
 param(
     [string]$memberName = "$env:MEMBER_NAME",
     [string]$resourceGroup = "$env:RESOURCE_GROUP",
-    [string]$secretsFolder = "./demo-resources.secret",
-    [string]$publicFolder = "./demo-resources.public"
+
+    [string]$secretDir = "./demo-resources.secret",
+    [string]$publicDir = "./demo-resources.public",
+
+    [string]$cgsClient = "$memberName-client"
 )
 
 $ccfName = $memberName + "-ccf"
-$memberCert = $secretsFolder + "/"+ $memberName +"_cert.pem" # Created previously via the keygenerator-sh command.
+$memberCert = $secretDir + "/"+ $memberName +"_cert.pem" # Created previously via the keygenerator-sh command.
 az confidentialledger managedccfs create `
     --name $ccfName `
     --resource-group $resourceGroup `
@@ -19,17 +22,17 @@ $ccfEndpoint = (az confidentialledger managedccfs show `
     --output tsv)
 
 # Share the CCF endpoint details.
-$ccfEndpoint > "$publicFolder/ccfEndpoint"
+$ccfEndpoint > "$publicDir/ccfEndpoint"
 
 # Deploy client-side containers to interact with the governance service as the first member.
 az cleanroom governance client deploy `
   --ccf-endpoint $ccfEndpoint `
-  --signing-cert $secretsFolder/$($memberName)_cert.pem `
-  --signing-key $secretsFolder/$($memberName)_privk.pem `
-  --name "$memberName-client"
+  --signing-cert $secretDir/$($memberName)_cert.pem `
+  --signing-key $secretDir/$($memberName)_privk.pem `
+  --name $cgsClient
 
 # Activate membership.
-az cleanroom governance member activate --governance-client "$memberName-client"
+az cleanroom governance member activate --governance-client $cgsClient
 
 # Deploy governance service on the CCF instance.
-az cleanroom governance service deploy --governance-client "$memberName-client"
+az cleanroom governance service deploy --governance-client $cgsClient

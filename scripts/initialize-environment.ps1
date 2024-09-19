@@ -1,8 +1,11 @@
 param(
     [ValidateSet("mhsm", "akvpremium")]
     [string]$kvType = "akvpremium",
+
     [string]$resourceGroup = "$env:RESOURCE_GROUP",
-    [string]$outDir = "./demo-resources.private",
+
+    [string]$privateDir = "./demo-resources.private",
+
     [string]$backupKv = "",
     [string]$overridesFilePath = "",
     [string]$resourceGroupTags = ""
@@ -12,17 +15,17 @@ $ErrorActionPreference = 'Stop'
 
 Import-Module $PSScriptRoot/azure-helpers/azure-helpers.psm1 -Force -DisableNameChecking
 
-mkdir -p $outDir
+mkdir -p $privateDir
 
 pwsh $PSScriptRoot/azure-helpers/generate-names.ps1 `
     -resourceGroup $resourceGroup `
     -kvType $kvType `
     -overridesFilePath $overridesFilePath `
     -backupKv $backupKv `
-    -outDir $outDir
+    -privateDir $privateDir
 
-. $outDir/names.generated.ps1
-$sandbox_common = $outDir
+. $privateDir/names.generated.ps1
+$sandbox_common = $privateDir
 
 Write-Host "Creating resource group $resourceGroup in $RESOURCE_GROUP_LOCATION"
 az group create --location $RESOURCE_GROUP_LOCATION --name $resourceGroup --tags $resourceGroupTags
@@ -41,7 +44,7 @@ if ($kvType -eq "mhsm") {
         -resourceGroup $resourceGroup `
         -hsmName $MHSM_NAME `
         -adminObjectId $objectId `
-        -outDir $sandbox_common
+        -privateDir $sandbox_common
 
     $result.kek.kv = $keyStore
     # Creating the Key Vault upfront so as not to run into naming issues
@@ -70,5 +73,5 @@ $result.sa = $storageAccount
 
 $result.maa_endpoint = $MAA_URL
 
-$result | ConvertTo-Json -Depth 100 > "$outDir/$resourceGroup.generated.json"
+$result | ConvertTo-Json -Depth 100 > "$privateDir/$resourceGroup.generated.json"
 return $result
