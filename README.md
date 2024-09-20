@@ -418,7 +418,7 @@ $scenario = "analytics"
 # Data publisher persona is picked from $env:MEMBER_NAME by default, use -persona to override.
 # Storage account is picked from ./demo-resources.private/$env:RESOURCE_GROUP.generated.json by default, use -sa to override.
 #
-pwsh ./demos/$scenario/publish-data.ps1
+./scripts/publish/publish-data.ps1 -scenario $scenario
 ```
 
 # Authoring collaboration contract
@@ -452,9 +452,11 @@ specification:
 
 The following command adds details about the datastores to be accessed by the clean room and their mode (source/sink) to the contract fragment:
 
+
 ```powershell
-pwsh ./demos/$scenario/add-specification-data.ps1
+./scripts/specification/add-specification-data.ps1 -scenario $scenario
 ```
+
 
 > [!NOTE]
 > <a name="MountPoints"></a>
@@ -466,9 +468,12 @@ pwsh ./demos/$scenario/add-specification-data.ps1
 
 The following command adds details about the (containerized) application to be executed within the clean room to the contract fragment:
 
+
 ```powershell
+# ./scripts/specification/add-specification-data.ps1 -scenario $scenario
 pwsh ./demos/$scenario/add-specification-application.ps1
 ```
+
 
 The application container is configured to access protected data through the corresponding filesystem [mount point](#MountPoints) for the datasource/datasink. The fragment also include details about the container image to be executed such as the container registry, image ID, command, environment variables and requested resources.
 
