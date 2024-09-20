@@ -71,9 +71,8 @@ collab-common
   - [Propose ARM template, CCE policy and log collection (operator)](#propose-arm-template-cce-policy-and-log-collection-operator)
   - [Accept ARM template, CCE policy and logging proposals (litware, fabrikam, contosso)](#accept-arm-template-cce-policy-and-logging-proposals-litware-fabrikam-contosso)
   - [Configure resource access for clean room (litware, fabrikam, contosso)](#configure-resource-access-for-clean-room-litware-fabrikam-contosso)
-    - [Setup access as consumer](#setup-access-as-consumer)
 - [Using the clean room](#using-the-clean-room)
-  - [Deploy clean room](#deploy-clean-room)
+  - [Deploy clean room (operator)](#deploy-clean-room-operator)
   - [Download encrypted output](#download-encrypted-output)
 - [Governing the cleanroom](#governing-the-cleanroom)
   - [Download and share logs](#download-and-share-logs)
@@ -577,7 +576,7 @@ Once the contract is accepted by all the collaborators, the _operator_ generates
 
 
 ```powershell
-./scripts/contract/register-deployment.ps1 -contractId "collab-$scenario"
+./scripts/contract/register-deployment-artefacts.ps1 -contractId "collab-$scenario"
 ```
 
 > [!TIP]
@@ -598,7 +597,7 @@ Once the *ARM template* and *CCE policy* proposals are available in the consorti
 
 
 ```powershell
-./scripts/contract/confirm-deployment.ps1 -contractId "collab-$scenario"
+./scripts/contract/confirm-deployment-artefacts.ps1 -contractId "collab-$scenario"
 ```
 
 
@@ -609,12 +608,12 @@ The DEKs that were created for dataset encryption as part of [data publishing](#
 
 The managed identities created earlier as part of [authoring the contract](#authoring-collaboration-contract) are given access to resources, and a federated credential is setup for these managed identities using the CGS OIDC identity provider. This federated credential allows the clean room to obtain an attestation based managed identity access token during execution.
 
-The flow below is executed by all the collaborators in their respective Azure tenants:
-
 
 ```powershell
-./scripts/contract/setup-access.ps1 -contractId "collab-$scenario"
+./scripts/contract/grant-deployment-access.ps1 -contractId "collab-$scenario"
 ```
+
+The flow below is executed by all the collaborators in their respective Azure tenants.
 
 
 ```mermaid
@@ -641,48 +640,21 @@ sequenceDiagram
 ```
 
 
-> [!TIP]
-> `setup-access` step might fail with the below error in case the RBAC permissions on the storage account created by the it has not been applied yet by the time its attempting to create a storage account. Try the command again after a while.
-> 
-> ![alt text](./assets/setup-access-error.png)
-
-### Setup access as consumer
-Run the following as the consumer.
-```powershell
-# Creates a KEK with SKR policy, wraps DEKs with the KEK and put in kv.
-az cleanroom config wrap-deks `
-    --contract-id $contractId `
-    --cleanroom-config $consumerConfig `
-    --governance-client "consumer-client"
-
-# Setup OIDC issuer endpoint and managed identity access to storage/KV in consumer tenant.
-./setup-access.ps1 `
-    -resourceGroup $consumerResourceGroup `
-    -contractId $contractId `
-    -governanceClient "consumer-client"
-```
 # Using the clean room
-## Deploy clean room
-Once the ARM template and CCE policy proposals have been accepted and access has been configured, the party deploying the clean room (the consumer in our case) can do so by running the following:
+## Deploy clean room (operator)
+Once the ARM template and CCE policy proposals have been accepted and access has been configured, the party deploying the clean room (the *operator* in our case) can do so by running the following:
+
 
 ```powershell
-# Get the agreed upon ARM template for deployment.
-(az cleanroom governance deployment template show `
-    --contract-id $contractId `
-    --governance-client "consumer-client" `
-    --query "data") | Out-File "./demo-resources/aci-deployment-template.json"
-
-# Deploy the clean room.
-$cleanRoomName = "collab-cleanroom"
-az deployment group create `
-    --resource-group $consumerResourceGroup `
-    --name $cleanRoomName `
-    --template-file "./demo-resources/aci-deployment-template.json"
+./scripts/cleanroom/deploy-cleanroom.ps1 -contractId "collab-$scenario"
 ```
+
+
 Run the following script to wait for the cleanroom to exit.
 ```powershell
-./wait-for-cleanroom.ps1 -cleanRoomName $cleanRoomName -resourceGroup $consumerResourceGroup
+./scripts/cleanroom/watch-cleanroom.ps1 -contractId "collab-$scenario"
 ```
+
 
 Once execution completes the result is written out to `consumer-ouput` datasink as configured by the consumer.
 
