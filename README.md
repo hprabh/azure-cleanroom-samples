@@ -470,7 +470,6 @@ The following command adds details about the (containerized) application to be e
 
 
 ```powershell
-# ./scripts/specification/add-specification-data.ps1 -scenario $scenario
 pwsh ./demos/$scenario/add-specification-application.ps1
 ```
 
@@ -656,26 +655,30 @@ Once the ARM template and CCE policy proposals have been accepted and access has
 
 
 Run the following script to wait for the cleanroom to exit.
+
+
 ```powershell
 ./scripts/cleanroom/watch-cleanroom.ps1 -contractId "collab-$scenario"
 ```
 
 
-Once execution completes the result is written out to `consumer-ouput` datasink as configured by the consumer.
-
 ## Download encrypted output
-Post execution, the encrypted output is written out to the consumer's storage account. To decrypt and download this, run the following:
+
+As part of the execution, the cleanroom application may write out any computed outputs to the datasinks configured. Post execution, this (encrypted) output can be downloaded from the the backing storage account and decrypt locally by the party owning the datasink.
+
+
 ```powershell
-az cleanroom datasink download `
-    --cleanroom-config $consumerConfig `
-    --name consumer-output `
-    --target-folder "./consumer-demo/consumer-output"
+./scripts/data/copy-data.ps1 -scenario $scenario
 ```
-This downloads the files from the storage container into the specified folder. There should be an `output.gz` file in the `consumer-demo/consumer-output` folder. Decompress the same via the below command and compare the contents of the decompressed file with that of `publisher-demo/publisher-input/input.txt`:
+
+
+This command downloads all the files from the storage container into a local folder. The application specific output can be viewed by running the following command:
+
+
 ```powershell
-gzip -d ./consumer-demo/consumer-output/consumer-output/output.gz
-cat ./consumer-demo/consumer-output/consumer-output/output
+pwsh ./demos/$scenario/show-output.ps1
 ```
+
 
 # Governing the cleanroom
 ## Download and share logs
