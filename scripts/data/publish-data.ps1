@@ -19,40 +19,65 @@ param(
     [string]$datasinkPath = "$demosDir/$scenario/datasink/$persona"
 )
 
-if (-not (Test-Path -Path $datasourcePath))
-{
-    Write-Host "No action required for persona '$persona' in scenario '$scenario'."
-    return
-}
-
-if (-not (("fabrikam", "contosso") -contains $persona))
-{
-    Write-Host "No action required for persona '$persona' in this scenario."
-    return
-}
-
 if ($sa -eq "")
 {
     $initResult = Get-Content $resourceConfig | ConvertFrom-Json
     $sa = $initResult.sa.id
 }
 
-$datastoreName = "analytics-$persona-input"
+if (Test-Path -Path $datasourcePath)
+{
+    $dirs = Get-ChildItem -Path $datasourcePath -Directory -Name
+    foreach ($dir in $dirs)
+    {
+        $datastoreName = "$scenario-$persona-$dir".ToLower()
 
-az cleanroom datastore add `
-    --name $datastoreName `
-    --config $datastoreConfig `
-    --keystore $keyStore `
-    --encryption-mode CPK `
-    --backingstore-type Azure_BlobStorage `
-    --backingstore-id $sa
+        Write-Host "Found datastore $datastoreName in $datasourcePath"
+        az cleanroom datastore add `
+            --name $datastoreName `
+            --config $datastoreConfig `
+            --keystore $keyStore `
+            --encryption-mode CPK `
+            --backingstore-type Azure_BlobStorage `
+            --backingstore-id $sa
 
-$datastoreFolder = "$datastoreDir/$datastoreName"
-mkdir -p $datastoreFolder
+        $datastoreFolder = "$datastoreDir/$datastoreName"
+        mkdir -p $datastoreFolder
+        cp -r "$basePath/$dir" $datastoreFolder
 
-cp -r "$PSScriptRoot/data/$persona/" $datastoreFolder
+        az cleanroom datastore upload `
+            --name $datastoreName `
+            --config $datastoreConfig `
+            --src $datastoreFolder
+    }
+}
+else
+{
+    Write-Host "No datastore found in $datasourcePath."
+}
 
-az cleanroom datastore upload `
-    --name $datastoreName `
-    --config $datastoreConfig `
-    --src $datastoreFolder
+
+if (Test-Path -Path $datasinkPath)
+{
+    $dirs = Get-ChildItem -Path $datasinkPath -Directory -Name
+    foreach ($dir in $dirs)
+    {
+        $datastoreName = "$scenario-$persona-$dir".ToLower()
+
+        Write-Host "Found datastore $datastoreName in $datasinkPath"
+        az cleanroom datastore add `
+            --name $datastoreName `
+            --config $datastoreConfig `
+            --keystore $keyStore `
+            --encryption-mode CPK `
+            --backingstore-type Azure_BlobStorage `
+            --backingstore-id $sa
+
+        $datastoreFolder = "$datastoreDir/$datastoreName"
+        mkdir -p $datastoreFolder
+    }
+}
+else
+{
+    Write-Host "No datastore found in $datasinkPath."
+}

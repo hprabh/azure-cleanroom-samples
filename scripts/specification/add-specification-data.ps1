@@ -48,11 +48,11 @@ if (Test-Path -Path $datasinkPath)
     foreach ($dir in $dirs)
     {
         $datastoreName = "$scenario-$persona-$dir".ToLower()
-        $datasourceName = "$persona-$dir".ToLower()
+        $datasinkName = "$persona-$dir".ToLower()
     
         az cleanroom config add-datasink `
             --cleanroom-config $collabConfigResult.configFile `
-            --name $datasourceName `
+            --name $datasinkName `
             --datastore-config $datastoreConfig `
             --datastore-name $datastoreName `
             --key-vault $resourceConfigResult.dek.kv.id `

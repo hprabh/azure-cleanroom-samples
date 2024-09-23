@@ -418,7 +418,7 @@ $scenario = "analytics"
 # Data publisher persona is picked from $env:MEMBER_NAME by default, use -persona to override.
 # Storage account is picked from ./demo-resources.private/$env:RESOURCE_GROUP.generated.json by default, use -sa to override.
 #
-./scripts/publish/publish-data.ps1 -scenario $scenario
+./scripts/data/publish-data.ps1 -scenario $scenario
 ```
 
 # Authoring collaboration contract
