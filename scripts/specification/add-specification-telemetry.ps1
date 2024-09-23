@@ -1,7 +1,7 @@
 param(
-        [Parameter(Mandatory = $true)]
-        [ValidateSet("analytics")]
-        [string]$scenario,
+    [Parameter(Mandatory = $true)]
+    [ValidateSet("analytics")]
+    [string]$scenario,
 
     [string]$persona = "$env:MEMBER_NAME",
     [string]$resourceGroup = "$env:RESOURCE_GROUP",

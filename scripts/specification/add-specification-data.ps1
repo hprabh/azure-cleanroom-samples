@@ -12,29 +12,54 @@ param(
     [string]$collabConfig = "$privateDir/$resourceGroup-analytics.generated.json",
     [string]$resourceConfig = "$privateDir/$resourceGroup.generated.json",
     [string]$datastoreConfig = "$privateDir/datastores.config",
-    [string]$basePath = "$demosDir/$scenario/data/$persona"
+    [string]$datasourcePath = "$demosDir/$scenario/datasource/$persona",
+    [string]$datasinkPath = "$demosDir/$scenario/datasink/$persona"
 )
-
-if (-not (Test-Path -Path $basepath))
-{
-    Write-Host "No data publishing required for persona '$persona' in scenario '$scenario'."
-    return
-}
 
 $collabConfigResult = Get-Content $collabConfig | ConvertFrom-Json
 $resourceConfigResult = Get-Content $resourceConfig | ConvertFrom-Json
 
-$dirs = Get-ChildItem -Path $basepath -Directory -Name
-foreach ($dir in $dirs)
+if (Test-Path -Path $datasourcePath)
 {
-    $datastoreName = "$scenario-$persona-$dir".ToLower()
-    $datasourceName = "$persona-$dir".ToLower()
+    $dirs = Get-ChildItem -Path $datasourcePath -Directory -Name
+    foreach ($dir in $dirs)
+    {
+        $datastoreName = "$scenario-$persona-$dir".ToLower()
+        $datasourceName = "$persona-$dir".ToLower()
+    
+        az cleanroom config add-datasource `
+            --cleanroom-config $collabConfigResult.configFile `
+            --name $datasourceName `
+            --datastore-config $datastoreConfig `
+            --datastore-name $datastoreName `
+            --key-vault $resourceConfigResult.dek.kv.id `
+            --identity "$persona-identity"
+    }
+}
+else
+{
+    Write-Host "No datasource required for persona '$persona' in scenario '$scenario'."
+}
 
-    az cleanroom config add-datasource `
-        --cleanroom-config $collabConfigResult.configFile `
-        --name $datasourceName `
-        --datastore-config $datastoreConfig `
-        --datastore-name $datastoreName `
-        --key-vault $resourceConfigResult.dek.kv.id `
-        --identity "$persona-identity"
+
+if (Test-Path -Path $datasinkPath)
+{
+    $dirs = Get-ChildItem -Path $datasinkPath -Directory -Name
+    foreach ($dir in $dirs)
+    {
+        $datastoreName = "$scenario-$persona-$dir".ToLower()
+        $datasourceName = "$persona-$dir".ToLower()
+    
+        az cleanroom config add-datasink `
+            --cleanroom-config $collabConfigResult.configFile `
+            --name $datasourceName `
+            --datastore-config $datastoreConfig `
+            --datastore-name $datastoreName `
+            --key-vault $resourceConfigResult.dek.kv.id `
+            --identity "$persona-identity"
+    }
+}
+else
+{
+    Write-Host "No datasink required for persona '$persona' in scenario '$scenario'."
 }

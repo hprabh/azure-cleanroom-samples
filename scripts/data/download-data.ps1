@@ -1,4 +1,7 @@
 param(
+    [Parameter(Mandatory = $true)]
+    [ValidateSet("analytics")]
+    [string]$scenario,
     [string]$persona = "$env:MEMBER_NAME",
 
     [string]$privateDir = "./demo-resources.private",
@@ -6,7 +9,6 @@ param(
 
     [string]$datastoreConfig = "$privateDir/datastores.config",
     [string]$datastoreDir = "$privateDir/datastores",
-    [string]$scenario = "$(Split-Path $PSScriptRoot -Leaf)",
     [string]$datasinkPath = "$demosDir/$scenario/datasink/$persona"
 )
 
@@ -18,11 +20,14 @@ if (Test-Path -Path $datasinkPath)
         $datastoreName = "$scenario-$persona-$dir".ToLower()
         $datastoreFolder = "$datastoreDir/$datastoreName"
 
-        Write-Host "Output from datastore '$datastoreName':"
-        gzip -c -d $datastoreFolder/*.gz
+        az cleanroom datastore download `
+            --name $datastoreName `
+            --config $datastoreConfig `
+            --dst $datastoreFolder
     }
 }
 else
 {
-    Write-Host "No output available for persona '$persona' in scenario '$scenario'."
+    Write-Host "No data download required for persona '$persona' in scenario '$scenario'."
 }
+

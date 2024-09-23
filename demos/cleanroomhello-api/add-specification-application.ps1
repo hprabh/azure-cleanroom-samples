@@ -1,6 +1,6 @@
 param(
-    [string]$image = "cleanroomsamples.azurecr.io/azure-cleanroom-samples/demos/analytics@sha256:303f94478f7908c94958d1c3651a754f493e54cac23e39b9b2b096d7e8931387",
-    [string]$endpointPolicy = "",
+    [string]$image = "docker.io/nginxdemos/nginx-hello:plain-text@sha256:d976f016b32fc381dfb74119cc421d42787b5a63a6b661ab57891b7caa5ad12e",
+    [string]$endpointPolicy = "cleanroomsamples.azurecr.io/nginx-hello/nginx-hello-policy@sha256:c71b70a70dfad8279d063ab68d80df6d8d407ba8359a68c6edb3e99a25c77575",
 
     [ValidateSet("litware")]
     [string]$persona = "$env:MEMBER_NAME",
@@ -14,7 +14,7 @@ param(
 
 if (-not (("litware") -contains $persona))
 {
-    Write-Host "No action required for persona '$persona' in this scenario."
+    Write-Host "No action required for persona '$persona' in scenario '$scenario'."
     return
 }
 
@@ -24,15 +24,11 @@ az cleanroom config add-application `
     --cleanroom-config $cleanroomConfigResult.configFile `
     --name demoapp-$scenario `
     --image $image `
-    --command "python3.10 ./analytics.py" `
-    --mounts "src=fabrikam-input,dst=/mnt/remote/fabrikam-input" `
-             "src=contosso-input,dst=/mnt/remote/contosso-input" `
-    --env-vars STORAGE_PATH_1=/mnt/remote/fabrikam-input `
-               STORAGE_PATH_2=/mnt/remote/contosso-input `
     --cpu 0.5 `
     --memory 4
 
 az cleanroom config add-application-endpoint `
     --cleanroom-config $cleanroomConfigResult.configFile `
     --application-name demoapp-$scenario `
-    --port 8310
+    --port 8080 `
+    --policy $endpointPolicy
