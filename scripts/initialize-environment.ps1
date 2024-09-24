@@ -22,7 +22,7 @@ pwsh $PSScriptRoot/azure-helpers/generate-names.ps1 `
     -kvType $kvType `
     -overridesFilePath $overridesFilePath `
     -backupKv $backupKv `
-    -privateDir $privateDir
+    -outDir $privateDir
 
 . $privateDir/names.generated.ps1
 $sandbox_common = $privateDir
@@ -38,6 +38,8 @@ $result = @{
     oidcsa       = @{}
     maa_endpoint = ""
 }
+
+# TODO(phanic): The following is not required for non collaborators.
 
 if ($kvType -eq "mhsm") {
     Write-Host "Creating HSM $MHSM_NAME in resource group $resourceGroup"

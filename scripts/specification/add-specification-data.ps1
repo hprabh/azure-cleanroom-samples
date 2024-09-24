@@ -1,6 +1,6 @@
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet("analytics")]
+    [ValidateSet("cleanroomhello-job", "cleanroomhello-api", "analytics")]
     [string]$scenario,
 
     [string]$persona = "$env:MEMBER_NAME",
@@ -9,7 +9,7 @@ param(
     [string]$privateDir = "./demo-resources.private",
     [string]$demosDir = "./demos",
 
-    [string]$collabConfig = "$privateDir/$resourceGroup-analytics.generated.json",
+    [string]$collabConfig = "$privateDir/$resourceGroup-$scenario.generated.json",
     [string]$resourceConfig = "$privateDir/$resourceGroup.generated.json",
     [string]$datastoreConfig = "$privateDir/datastores.config",
     [string]$datasourcePath = "$demosDir/$scenario/datasource/$persona",

@@ -1,6 +1,6 @@
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet("analytics")]
+    [ValidateSet("cleanroomhello-job", "cleanroomhello-api", "analytics")]
     [string]$scenario,
 
     [ValidateSet("cached", "generate", "generate-debug", "allow-all")]
@@ -12,7 +12,7 @@ param(
 
     [string]$publicDir = "./demo-resources.public",
 
-    [string]$cleanroomConfig = "$publicFolder/finalized-$scenario.config",
+    [string]$cleanroomConfig = "$publicDir/finalized-$scenario.config",
     [string]$contractId = "collab-$scenario",
     [string]$artefactDir = "$publicDir/$contractId"
 )

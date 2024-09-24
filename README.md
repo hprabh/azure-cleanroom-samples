@@ -53,7 +53,7 @@ collab-common
   - [Initializing the environment](#initializing-the-environment)
 - [High level execution sequence](#high-level-execution-sequence)
 - [Setting up the consortium](#setting-up-the-consortium)
-  - [Member identity creation (litware, fabrikam, contosso)](#member-identity-creation-litware-fabrikam-contosso)
+  - [Member identity creation (operator, litware, fabrikam, contosso)](#member-identity-creation-operator-litware-fabrikam-contosso)
   - [Create the CCF instance (operator)](#create-the-ccf-instance-operator)
   - [Invite members to the consortium (operator)](#invite-members-to-the-consortium-operator)
   - [Join the consortium (litware, fabrikam, contosso)](#join-the-consortium-litware-fabrikam-contosso)
@@ -327,7 +327,7 @@ sequenceDiagram
     end
 ```
 
-## Member identity creation (litware, fabrikam, contosso)
+## Member identity creation (operator, litware, fabrikam, contosso)
 A CCF member is identified by a public-key certificate used for client authentication and command signing. Each member of the collaboration creates their member identity by generating their public and private key pair.
 
 ```powershell
@@ -411,7 +411,7 @@ sequenceDiagram
 The following command initializes datastores and uploads encrypted datasets required for executing the samples:
 
 ```powershell
-$scenario = "analytics"
+$scenario = "<scenario>" # ("cleanroomhello-job", "cleanroomhello-api", "analytics")
 
 # Publish data. 
 #
@@ -430,7 +430,7 @@ Every party participating in the collaboration authors their respective contract
 The following command initializes the contract fragement for a given scenario:
 
 ```powershell
-$scenario = "analytics"
+$scenario = "<scenario>" # ("cleanroomhello-job", "cleanroomhello-api", "analytics")
 
 ./scripts/specification/initialize-specification.ps1 -scenario $scenario
 ```

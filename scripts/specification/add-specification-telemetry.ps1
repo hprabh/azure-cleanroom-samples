@@ -1,6 +1,6 @@
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet("analytics")]
+    [ValidateSet("cleanroomhello-job", "cleanroomhello-api", "analytics")]
     [string]$scenario,
 
     [string]$persona = "$env:MEMBER_NAME",
@@ -20,7 +20,7 @@ $resourceConfigResult = Get-Content $resourceConfig | ConvertFrom-Json
 
 # $result below refers to the output of the prepare-resources.ps1 that was run earlier.
 az cleanroom config set-logging `
-    --cleanroom-config-file $cleanroomConfigResult.configFile `
+    --cleanroom-config $cleanroomConfigResult.configFile `
     --datastore-config $datastoreConfig `
     --datastore-keystore $keysDir `
     --storage-account $resourceConfigResult.sa.id `
@@ -29,7 +29,7 @@ az cleanroom config set-logging `
     --encryption-mode CPK
 
 az cleanroom config set-telemetry `
-    --cleanroom-config-file $cleanroomConfigResult.configFile `
+    --cleanroom-config $cleanroomConfigResult.configFile `
     --datastore-config $datastoreConfig `
     --datastore-keystore $keysDir `
     --storage-account $resourceConfigResult.sa.id `

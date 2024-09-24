@@ -1,6 +1,6 @@
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet("analytics")]
+    [ValidateSet("cleanroomhello-job", "cleanroomhello-api", "analytics")]
     [string]$scenario,
 
     [string[]]$collaborators = ('litware', 'fabrikam', 'contosso'),
@@ -9,7 +9,7 @@ param(
 
     [string]$publicDir = "./demo-resources.public",
 
-    [string]$cleanroomConfig = "$publicFolder/finalized-$scenario.config",
+    [string]$cleanroomConfig = "$publicDir/finalized-$scenario.config",
     [string]$contractId = "collab-$scenario" # A unique identifier to refer to this collaboration.
 )
 
@@ -18,14 +18,15 @@ az cleanroom config init `
 
 # Generate the cleanroom config which contains all the datasources, sinks and applications that are
 # configured by the collaborators.
+$azArgs = "cleanroom config view --cleanroom-config $cleanroomConfig --output-file $cleanroomConfig --configs "
 foreach ($collaboratorName in $collaborators)
 {
-    Write-Host "Merging fragment for member '$collaboratorName'"
-    az cleanroom config view `
-        --cleanroom-config $cleanroomConfig `
-        --configs "./$publicFolder/$collaboratorName-$scenario.config" `
-    > $cleanroomConfig
+    Write-Host "Adding fragment for member '$collaboratorName'"
+    $azArgs = $azArgs + "./$publicDir/$collaboratorName-$scenario.config "
 }
+
+Start-Process az $azArgs -Wait
+
 
 # Validate the contract structure before proposing.
 az cleanroom config validate --cleanroom-config $cleanroomConfig

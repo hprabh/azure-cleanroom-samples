@@ -1,6 +1,6 @@
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet("analytics")]
+    [ValidateSet("cleanroomhello-job", "cleanroomhello-api", "analytics")]
     [string]$scenario,
 
     [string]$persona = "$env:MEMBER_NAME",
@@ -43,7 +43,7 @@ if (Test-Path -Path $datasourcePath)
 
         $datastoreFolder = "$datastoreDir/$datastoreName"
         mkdir -p $datastoreFolder
-        cp -r "$basePath/$dir" $datastoreFolder
+        cp -r "$datasourcePath/$dir" $datastoreFolder
 
         az cleanroom datastore upload `
             --name $datastoreName `
