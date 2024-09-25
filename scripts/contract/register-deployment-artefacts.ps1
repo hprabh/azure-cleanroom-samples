@@ -22,7 +22,7 @@ mkdir $artefactDir
 az cleanroom governance deployment generate `
     --contract-id $contractId `
     --governance-client $cgsClient `
-    --securityPolicy $securityPolicy `
+    --security-policy-creation-option $securityPolicy `
     --output-dir $artefactDir
 
 az cleanroom governance deployment template propose `

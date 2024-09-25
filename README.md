@@ -67,9 +67,9 @@ collab-common
   - [Setting up log collection (litware)](#setting-up-log-collection-litware)
 - [Finalizing collaboration contract](#finalizing-collaboration-contract)
   - [Proposing a governance contract (operator)](#proposing-a-governance-contract-operator)
-  - [Agreeing upon the contract (litware, fabrikam, contosso)](#agreeing-upon-the-contract-litware-fabrikam-contosso)
+  - [Agreeing upon the contract (litware, fabrikam, contosso, operator)](#agreeing-upon-the-contract-litware-fabrikam-contosso-operator)
   - [Propose ARM template, CCE policy and log collection (operator)](#propose-arm-template-cce-policy-and-log-collection-operator)
-  - [Accept ARM template, CCE policy and logging proposals (litware, fabrikam, contosso)](#accept-arm-template-cce-policy-and-logging-proposals-litware-fabrikam-contosso)
+  - [Accept ARM template, CCE policy and logging proposals (litware, fabrikam, contosso, operator)](#accept-arm-template-cce-policy-and-logging-proposals-litware-fabrikam-contosso-operator)
   - [Configure resource access for clean room (litware, fabrikam, contosso)](#configure-resource-access-for-clean-room-litware-fabrikam-contosso)
 - [Using the clean room](#using-the-clean-room)
   - [Deploy clean room (operator)](#deploy-clean-room-operator)
@@ -566,7 +566,8 @@ The _operator_ merges all the contract fragments shared by the collaborators and
 > [!WARNING]
 > In the default sample environment, the containers for all participants have their `/home/samples/demo-resources.public` mapped to a single host directory, so the contract fragments would be available to all parties automatically once generated. If not, the fragments  of all other parties needs to made available in `/home/samples/demo-resources.public` of the _operator's_ environment before running the command above.
 
-## Agreeing upon the contract (litware, fabrikam, contosso)
+## Agreeing upon the contract (litware, fabrikam, contosso, operator)
+<!--TODO (phanic): Get rid of the operator agreeing upon the contract.-->
 The collaborating parties can now query the governance service to get the proposed contract, run their validations and accept or reject the contract.
 
 
@@ -578,9 +579,16 @@ The collaborating parties can now query the governance service to get the propos
 ## Propose ARM template, CCE policy and log collection (operator)
 Once the contract is accepted by all the collaborators, the _operator_ generates the artefacts required for deploying a _*CCR*_ instance for the contained clean room specification using Azure Confidential Container Instances ([_C-ACI_](https://learn.microsoft.com/azure/container-instances/container-instances-confidential-overview)) and proposes them to the consortium.
 
+<!--TODO (phanic):
+We need to figure out a means to publish images and digests from main to registry that can be consumed in this step.
+
+Current workaround is to build main locally and publish to a local registry:
+$env:AZCLI_CLEANROOM_CONTAINER_REGISTRY_URL = "localhost:5001"
+$env:AZCLI_CLEANROOM_SIDECARS_VERSIONS_DOCUMENT_URL = "localhost:5001/sidecar-digests:latest
+-->
 
 ```powershell
-./scripts/contract/register-deployment-artefacts.ps1 -contractId "collab-$scenario"
+./scripts/contract/register-deployment-artefacts.ps1 -scenario $scenario
 ```
 
 > [!TIP]
@@ -596,7 +604,9 @@ Once the contract is accepted by all the collaborators, the _operator_ generates
 > [!TIP]
 > The samples take advantage of pre-calculated CCE policy fragments when computing the clean room policy. If desired, the policy can be computed afresh by setting the `securityPolicy` parameter to `generate` or `generate-debug`. Note that the command will take longer in this case as it invokes `az confcom acipolicygen` internally which takes 10-15 minutes to finish.
 
-## Accept ARM template, CCE policy and logging proposals (litware, fabrikam, contosso)
+## Accept ARM template, CCE policy and logging proposals (litware, fabrikam, contosso, operator)
+<!--TODO (phanic): Get rid of the operator agreeing upon the contract.-->
+
 Once the *ARM template* and *CCE policy* proposals are available in the consortium, the collaborating parties validate and vote on these proposals. In these samples, we accept these proposals without any verification.
 
 
@@ -614,7 +624,7 @@ The managed identities created earlier as part of [authoring the contract](#auth
 
 
 ```powershell
-./scripts/contract/grant-deployment-access.ps1 -contractId "collab-$scenario"
+./scripts/contract/grant-deployment-access.ps1 -scenario $scenario
 ```
 
 The flow below is executed by all the collaborators in their respective Azure tenants.
