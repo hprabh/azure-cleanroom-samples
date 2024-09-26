@@ -41,14 +41,14 @@ if (Test-Path -Path $datasourcePath)
             --backingstore-type Azure_BlobStorage `
             --backingstore-id $sa
 
-        $datastoreFolder = "$datastoreDir/$datastoreName"
-        mkdir -p $datastoreFolder
-        cp -r "$datasourcePath/$dir" $datastoreFolder
+        $datastorePath = "$datastoreDir/$datastoreName"
+        mkdir -p $datastorePath
+        cp -r $datasourcePath/$dir/* $datastorePath
 
         az cleanroom datastore upload `
             --name $datastoreName `
             --config $datastoreConfig `
-            --src $datastoreFolder
+            --src $datastorePath
     }
 }
 else
@@ -73,8 +73,8 @@ if (Test-Path -Path $datasinkPath)
             --backingstore-type Azure_BlobStorage `
             --backingstore-id $sa
 
-        $datastoreFolder = "$datastoreDir/$datastoreName"
-        mkdir -p $datastoreFolder
+        $datastorePath = "$datastoreDir/$datastoreName"
+        mkdir -p $datastorePath
     }
 }
 else

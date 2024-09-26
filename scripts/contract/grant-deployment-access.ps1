@@ -27,6 +27,7 @@ $resourceConfigResult = Get-Content $resourceConfig | ConvertFrom-Json
 #
 # Create a KEK with SKR policy, wrap DEKs with the KEK and put in kv.
 #
+# TODO (phanic): Skip this for collaborator if they don't have a DEK.
 az cleanroom config wrap-deks `
     --contract-id $contractId `
     --cleanroom-config $collabConfigResult.configFile `

@@ -20,7 +20,7 @@ if (-not (("litware") -contains $persona))
 
 $cleanroomConfigResult = Get-Content $cleanroomConfig | ConvertFrom-Json
 
-$inline_code = $(cat ./application/main.go | base64 -w 0)
+$inline_code = $(cat $PSScriptRoot/application/main.go | base64 -w 0)
 az cleanroom config add-application `
     --cleanroom-config $cleanroomConfigResult.configFile `
     --name demoapp-$scenario `

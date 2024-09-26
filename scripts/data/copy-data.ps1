@@ -18,12 +18,11 @@ if (Test-Path -Path $datasinkPath)
     foreach ($dir in $dirs)
     {
         $datastoreName = "$scenario-$persona-$dir".ToLower()
-        $datastoreFolder = "$datastoreDir/$datastoreName"
 
         az cleanroom datastore download `
             --name $datastoreName `
             --config $datastoreConfig `
-            --dst $datastoreFolder
+            --dst $datastoreDir
     }
 }
 else
