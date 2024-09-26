@@ -75,11 +75,10 @@ collab-common
   - [Deploy clean room (operator)](#deploy-clean-room-operator)
   - [Download encrypted output](#download-encrypted-output)
 - [Governing the cleanroom](#governing-the-cleanroom)
-  - [Download and share logs](#download-and-share-logs)
+  - [Download and share logs (litware)](#download-and-share-logs-litware)
   - [Explore the downloaded logs](#explore-the-downloaded-logs)
   - [View telemetry for infrastucture containers](#view-telemetry-for-infrastucture-containers)
   - [See audit events](#see-audit-events)
-- [Next Steps](#next-steps)
   - [Contributing](#contributing)
   - [Trademarks](#trademarks)
 
@@ -691,24 +690,26 @@ pwsh ./demos/$scenario/show-output.ps1
 
 
 # Governing the cleanroom
-## Download and share logs
-The publisher can download the infrastructure telemetry and application logs. These are available post execution in an encrypted form. To decrypt and inspect, run the following:
-```powershell
-az cleanroom logs download `
-    --cleanroom-config $publisherConfig `
-    --target-folder "./publisher-demo/logs"
+## Download and share logs (litware)
+The application developer (_litware_) can download the infrastructure telemetry and application logs. These are available post execution in an encrypted form. To decrypt and inspect, run the following:
 
-az cleanroom telemetry download `
-    --cleanroom-config $publisherConfig `
-    --target-folder "./publisher-demo/telemetry"
+
+```powershell
+./scripts/data/copy-telemetry.ps1 -scenario $scenario
 ```
-The above command will download into the specified target folder and decrypt the various files for metrics, traces and logs. The publisher can inspect these files and then choose to share them with the consumer.
+
+
+The above command downloads and decrypt the various files for metrics, traces and logs. The application developer can inspect these files and then choose to share them with the other collaborators.
 
 ## Explore the downloaded logs
 See the logs emitted by the application container using the below command:
+
+<!--TODO (phanic): Update this command.-->
 ```powershell
 cat ./publisher-demo/logs/application-telemetry/demo-app.log
 ```
+
+
 This shows output as below:
 ```powershell
 2024-06-05T12:54:17.945694635+00:00 stdout F File is present at: /mnt/remote/input/input.txt
@@ -717,14 +718,16 @@ This shows output as below:
 2024-06-05T12:54:18.168096107+00:00 stdout F Compressing the file.
 2024-06-05T12:54:18.169313592+00:00 stdout F File compressed successfully.
 ```
+
+
 ## View telemetry for infrastucture containers
 
-You can also inspect the telemetry emitted by the clean room infrastructure containers as telemetry was enabled in this sample.
+One can also inspect the telemetry emitted by the clean room infrastructure containers as telemetry was enabled in this sample.
 
 The infrastructure containers traces, logs and metrics that are useful for debugging errors, tracing the execution sequence etc.
 
 To view the telemetry, run the following command:
-
+<!--TODO (phanic): Update this command.-->
 ```powershell
 az cleanroom telemetry aspire-dashboard `
     --telemetry-folder ./publisher-demo/telemetry/infrastructure-telemetry
@@ -787,10 +790,6 @@ This shows output as below:
   ]
 }
 ```
-# Next Steps
-- See how to [perform a code change](./scenarios/code-change/README.md) for the application container and redeploy a new clean room instance.
-- See how to [perform upgrades](./scenarios/upgrade/README.md) of the cleanroom infrastructure components.
-
 
 ## Contributing
 
