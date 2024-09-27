@@ -3,25 +3,30 @@ param(
     [string]$endpointPolicy = "",
 
     [ValidateSet("litware")]
-    [string]$persona = "$env:MEMBER_NAME",
+    [string]$persona = "$env:PERSONA",
     [string]$resourceGroup = "$env:RESOURCE_GROUP",
 
-    [string]$privateDir = "./demo-resources.private",
+    [string]$samplesRoot = "/home/samples",
+    [string]$privateDir = "$samplesRoot/demo-resources.private",
 
     [string]$scenario = "$(Split-Path $PSScriptRoot -Leaf)",
-    [string]$cleanroomConfig = "$privateDir/$resourceGroup-$scenario.generated.json"
+    [string]$contractConfig = "$privateDir/$resourceGroup-$scenario.generated.json"
 )
 
 if (-not (("litware") -contains $persona))
 {
-    Write-Host "No action required for persona '$persona' in this scenario."
+    Write-Host -ForegroundColor Yellow `
+        "No action required for persona '$persona' in scenario '$scenario'."
     return
 }
 
-$cleanroomConfigResult = Get-Content $cleanroomConfig | ConvertFrom-Json
+$configResult = Get-Content $contractConfig | ConvertFrom-Json
+Write-Host -ForegroundColor Gray `
+    "Adding application details for '$persona' in the '$scenario' scenario to " `
+    "'$($configResult.contractFragment)'..."
 
 az cleanroom config add-application `
-    --cleanroom-config $cleanroomConfigResult.configFile `
+    --cleanroom-config $configResult.contractFragment `
     --name demoapp-$scenario `
     --image $image `
     --command "python3.10 ./analytics.py" `
@@ -33,6 +38,9 @@ az cleanroom config add-application `
     --memory 4
 
 az cleanroom config add-application-endpoint `
-    --cleanroom-config $cleanroomConfigResult.configFile `
+    --cleanroom-config $configResult.contractFragment `
     --application-name demoapp-$scenario `
     --port 8310
+
+Write-Host -ForegroundColor Yellow `
+    "Added application 'demoapp-$scenario' ($image)."

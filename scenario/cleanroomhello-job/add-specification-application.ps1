@@ -3,26 +3,31 @@ param(
     [string]$endpointPolicy = "",
 
     [ValidateSet("litware")]
-    [string]$persona = "$env:MEMBER_NAME",
+    [string]$persona = "$env:PERSONA",
     [string]$resourceGroup = "$env:RESOURCE_GROUP",
 
-    [string]$privateDir = "./demo-resources.private",
+    [string]$samplesRoot = "/home/samples",
+    [string]$privateDir = "$samplesRoot/demo-resources.private",
 
     [string]$scenario = "$(Split-Path $PSScriptRoot -Leaf)",
-    [string]$cleanroomConfig = "$privateDir/$resourceGroup-$scenario.generated.json"
+    [string]$contractConfig = "$privateDir/$resourceGroup-$scenario.generated.json"
 )
 
 if (-not (("litware") -contains $persona))
 {
-    Write-Host "No action required for persona '$persona' in scenario '$scenario'."
+    Write-Host -ForegroundColor Yellow `
+        "No action required for persona '$persona' in scenario '$scenario'."
     return
 }
 
-$cleanroomConfigResult = Get-Content $cleanroomConfig | ConvertFrom-Json
+$configResult = Get-Content $contractConfig | ConvertFrom-Json
+Write-Host -ForegroundColor Gray `
+    "Adding application details for '$persona' in the '$scenario' scenario to " `
+    "'$($configResult.contractFragment)'..."
 
 $inline_code = $(cat $PSScriptRoot/application/main.go | base64 -w 0)
 az cleanroom config add-application `
-    --cleanroom-config $cleanroomConfigResult.configFile `
+    --cleanroom-config $configResult.contractFragment `
     --name demoapp-$scenario `
     --image $image `
     --command "bash -c 'echo `$CODE | base64 -d > main.go; go run main.go'" `
@@ -33,3 +38,6 @@ az cleanroom config add-application `
                CODE="$inline_code" `
     --cpu 0.5 `
     --memory 4
+
+Write-Host -ForegroundColor Yellow `
+    "Added application 'demoapp-$scenario' ($image)."

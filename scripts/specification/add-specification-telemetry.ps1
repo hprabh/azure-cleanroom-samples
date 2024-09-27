@@ -3,36 +3,50 @@ param(
     [ValidateSet("cleanroomhello-job", "cleanroomhello-api", "analytics")]
     [string]$scenario,
 
-    [string]$persona = "$env:MEMBER_NAME",
+    [string]$persona = "$env:PERSONA",
     [string]$resourceGroup = "$env:RESOURCE_GROUP",
 
-    [string]$privateDir = "./demo-resources.private",
-    [string]$secretDir = "./demo-resources.secret",
+    [string]$samplesRoot = "/home/samples",
+    [string]$privateDir = "$samplesRoot/demo-resources.private",
+    [string]$secretDir = "$samplesRoot/demo-resources.secret",
 
-    [string]$cleanroomConfig = "$privateDir/$resourceGroup-$scenario.generated.json",
-    [string]$resourceConfig = "$privateDir/$resourceGroup.generated.json",
+    [string]$contractConfig = "$privateDir/$resourceGroup-$scenario.generated.json",
+    [string]$environmentConfig = "$privateDir/$resourceGroup.generated.json",
     [string]$datastoreConfig = "$privateDir/datastores.config",
     [string]$keysDir = "$secretDir/keys"
 )
 
-$cleanroomConfigResult = Get-Content $cleanroomConfig | ConvertFrom-Json
-$resourceConfigResult = Get-Content $resourceConfig | ConvertFrom-Json
+#https://learn.microsoft.com/en-us/powershell/scripting/learn/experimental-features?view=powershell-7.4#psnativecommanderroractionpreference
+$ErrorActionPreference = 'Stop'
+$PSNativeCommandUseErrorActionPreference = $true
+
+$contractConfigResult = Get-Content $contractConfig | ConvertFrom-Json
+$environmentConfigResult = Get-Content $environmentConfig | ConvertFrom-Json
+
+Write-Host -ForegroundColor Gray `
+    "Adding telemetry details for '$persona' in the '$scenario' scenario to " `
+    "'$($configResult.contractFragment)'..."
 
 # $result below refers to the output of the prepare-resources.ps1 that was run earlier.
 az cleanroom config set-logging `
-    --cleanroom-config $cleanroomConfigResult.configFile `
+    --cleanroom-config $contractConfigResult.contractFragment `
     --datastore-config $datastoreConfig `
     --datastore-keystore $keysDir `
-    --storage-account $resourceConfigResult.sa.id `
+    --storage-account $environmentConfigResult.sa.id `
     --identity "$persona-identity" `
-    --key-vault $resourceConfigResult.dek.kv.id `
+    --key-vault $environmentConfigResult.dek.kv.id `
     --encryption-mode CPK
+Write-Host -ForegroundColor Yellow `
+    "Added application telemetry details."
 
 az cleanroom config set-telemetry `
-    --cleanroom-config $cleanroomConfigResult.configFile `
+    --cleanroom-config $contractConfigResult.contractFragment `
     --datastore-config $datastoreConfig `
     --datastore-keystore $keysDir `
-    --storage-account $resourceConfigResult.sa.id `
+    --storage-account $environmentConfigResult.sa.id `
     --identity "$persona-identity" `
-    --key-vault $resourceConfigResult.dek.kv.id `
+    --key-vault $environmentConfigResult.dek.kv.id `
     --encryption-mode CPK
+Write-Host -ForegroundColor Yellow `
+    "Added infrastructure telemetry details."
+

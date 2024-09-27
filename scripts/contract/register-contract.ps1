@@ -5,14 +5,21 @@ param(
 
     [string[]]$collaborators = ('litware', 'fabrikam', 'contosso'),
 
-    [string]$cgsClient = "$env:MEMBER_NAME-client",
+    [string]$cgsClient = "$env:PERSONA-client",
 
-    [string]$publicDir = "./demo-resources.public",
+    [string]$samplesRoot = "/home/samples",
+    [string]$publicDir = "$samplesRoot/demo-resources.public",
 
-    [string]$cleanroomConfig = "$publicDir/finalized-$scenario.config",
-    [string]$contractId = "collab-$scenario" # A unique identifier to refer to this collaboration.
+    [string]$contractId = "collab-$scenario-$((New-Guid).ToString().Substring(0, 8))",
+    [string]$cleanroomConfig = "$publicDir/$contractId-cleanroom.config"
 )
 
+#https://learn.microsoft.com/en-us/powershell/scripting/learn/experimental-features?view=powershell-7.4#psnativecommanderroractionpreference
+$ErrorActionPreference = 'Stop'
+$PSNativeCommandUseErrorActionPreference = $true
+
+Write-Host -ForegroundColor Gray `
+    "Generating cleanroom specification for contract '$contractId' at '$cleanroomConfig'..." 
 az cleanroom config init `
     --cleanroom-config $cleanroomConfig
 
@@ -21,15 +28,21 @@ az cleanroom config init `
 $azArgs = "cleanroom config view --cleanroom-config $cleanroomConfig --output-file $cleanroomConfig --configs "
 foreach ($collaboratorName in $collaborators)
 {
-    Write-Host "Adding fragment for member '$collaboratorName'"
-    $azArgs = $azArgs + "./$publicDir/$collaboratorName-$scenario.config "
+    $fragment = "./$publicDir/$collaboratorName-$scenario.config"
+    Write-Host -ForegroundColor Gray `
+        "Adding fragment for '$collaboratorName' ('$fragment')..."
+    $azArgs = $azArgs + "$fragment "
 }
 
 Start-Process az $azArgs -Wait
-
+Write-Host -ForegroundColor Yellow `
+    "Generated cleanroom specification for contract '$contractId' at '$cleanroomConfig'." 
 
 # Validate the contract structure before proposing.
 az cleanroom config validate --cleanroom-config $cleanroomConfig
+
+Write-Host -ForegroundColor Gray `
+    "Proposing contract '$contractId' to the consortium..." 
 
 $data = Get-Content -Raw $cleanroomConfig
 az cleanroom governance contract create `
@@ -50,3 +63,6 @@ az cleanroom governance contract propose `
     --query "proposalId" `
     --output tsv `
     --governance-client $cgsClient
+
+Write-Host -ForegroundColor Gray `
+    "Proposed contract for '$contractId' to the consortium." 

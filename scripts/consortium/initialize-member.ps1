@@ -1,30 +1,39 @@
 param(
-    [string]$memberName = "$env:MEMBER_NAME",
+    [string]$persona = "$env:PERSONA",
 
-    [string]$secretDir = "./demo-resources.secret",
-    [string]$publicDir = "./demo-resources.public"
+    [string]$samplesRoot = "/home/samples",
+    [string]$secretDir = "$samplesRoot/demo-resources.secret",
+    [string]$publicDir = "$samplesRoot/demo-resources.public"
 )
 
-$memberCert = $memberName +"_cert.pem"
-$encryptionCert = $memberName +"_enc_pubk.pem"
+#https://learn.microsoft.com/en-us/powershell/scripting/learn/experimental-features?view=powershell-7.4#psnativecommanderroractionpreference
+$ErrorActionPreference = 'Stop'
+$PSNativeCommandUseErrorActionPreference = $true
+
+$memberCert = $persona +"_cert.pem"
+$encryptionCert = $persona +"_enc_pubk.pem"
 
 if ((Test-Path -Path "$publicDir/$memberCert") -or 
     (Test-Path -Path "$publicDir/$encryptionCert"))
 {
-    Write-Host "Identity and/or encryption key pairs for '$memberName' already exist in '$publicDir'" -ForegroundColor Yellow
+    Write-Host -ForegroundColor Yellow `
+        "Identity and/or encryption key pairs for '$persona' already exist in '$publicDir'."
     return
 }
 
 # Generate member identity and encryption public-private key pair.
-Write-Host -"Generating identity and encryption key pairs for '$memberName' in '$secretDir'" -ForegroundColor Yellow
-az cleanroom governance member keygenerator-sh | bash -s -- --gen-enc-key --name $memberName --out $secretDir
+Write-Host -ForegroundColor Gray `
+    "Generating identity and encryption key pairs for '$persona' in '$secretDir'..." 
+az cleanroom governance member keygenerator-sh | bash -s -- --gen-enc-key --name $persona --out $secretDir
 
 # Share the public keys for the member.
-Write-Host -"Sharing public key for '$memberName' to '$publicDir'" -ForegroundColor Yellow
 cp "$secretDir/$memberCert" $publicDir
 cp "$secretDir/$encryptionCert" $publicDir
+Write-Host -ForegroundColor Yellow `
+    "Shared public keys for '$persona' to '$publicDir'." 
 
 # Share the tenant ID.
 $memberTenantId = az account show --query "tenantId" --output tsv
-Write-Host -"Sharing tenant ID '$memberTenantId' for '$memberName' to '$publicDir'" -ForegroundColor Yellow
-$memberTenantId > "$publicDir/$memberName.tenantid"
+$memberTenantId | Out-File "$publicDir/$persona.tenantid"
+Write-Host -ForegroundColor Yellow `
+    "Shared tenant ID '$memberTenantId' for '$persona' to '$publicDir/$persona.tenantid'."

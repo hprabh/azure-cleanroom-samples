@@ -3,34 +3,45 @@ param(
     [ValidateSet("cleanroomhello-job", "cleanroomhello-api", "analytics")]
     [string]$scenario,
 
-    [string]$cgsClient = "$env:MEMBER_NAME-client",
+    [Parameter(Mandatory = $true)]
+    [string]$contractId,
+
+    [string]$cgsClient = "$env:PERSONA-client",
     [string]$resourceGroup = "$env:RESOURCE_GROUP",
 
-    [string]$publicDir = "./demo-resources.public",
-    [string]$privateDir = "./demo-resources.private",
-    [string]$secretDir = "./demo-resources.secret",
+    [string]$samplesRoot = "/home/samples",
+    [string]$publicDir = "$samplesRoot/demo-resources.public",
+    [string]$privateDir = "$samplesRoot/demo-resources.private",
+    [string]$secretDir = "$samplesRoot/demo-resources.secret",
+
     [string]$oidcContainerName = "cgs-oidc",
+    [string]$ccfEndpoint = (Get-Content "$publicDir/ccfEndpoint"),
 
     [string]$keyStore = "$secretDir/keys",
     [string]$datastoreConfig = "$privateDir/datastores.config",
-    [string]$resourceConfig = "$privateDir/$resourceGroup.generated.json",
-    [string]$collabConfig = "$privateDir/$resourceGroup-$scenario.generated.json",
-    [string]$contractId = "collab-$scenario" # A unique identifier to refer to this collaboration.
+    [string]$environmentConfig = "$privateDir/$resourceGroup.generated.json",
+    [string]$contractConfig = "$privateDir/$resourceGroup-$scenario.generated.json"
 )
 
+#https://learn.microsoft.com/en-us/powershell/scripting/learn/experimental-features?view=powershell-7.4#psnativecommanderroractionpreference
 $ErrorActionPreference = 'Stop'
+$PSNativeCommandUseErrorActionPreference = $true
+
+Write-Host -ForegroundColor Gray `
+    "Granting access to resources required for '$scenario' scenario to deployments implementing " `
+    "contract '$contractId'..." 
 
 Import-Module $PSScriptRoot/../azure-helpers/azure-helpers.psm1 -Force -DisableNameChecking
-$collabConfigResult = (Get-Content $collabConfig | ConvertFrom-Json)
-$resourceConfigResult = Get-Content $resourceConfig | ConvertFrom-Json
+$contractConfigResult = (Get-Content $contractConfig | ConvertFrom-Json)
+$environmentConfigResult = Get-Content $environmentConfig | ConvertFrom-Json
 
 #
 # Create a KEK with SKR policy, wrap DEKs with the KEK and put in kv.
-#
 # TODO (phanic): Skip this for collaborator if they don't have a DEK.
+#
 az cleanroom config wrap-deks `
     --contract-id $contractId `
-    --cleanroom-config $collabConfigResult.configFile `
+    --cleanroom-config $contractConfigResult.contractFragment `
     --datastore-config $datastoreConfig `
     --key-store $keyStore `
     --governance-client $cgsClient
@@ -38,33 +49,40 @@ az cleanroom config wrap-deks `
 #
 # Setup managed identity access to storage/KV in collaborator tenant.
 #
-$managedIdentity = $collabConfigResult.mi
-$kekVault = $resourceConfigResult.kek.kv
-$dekVault = $resourceConfigResult.dek.kv
+$managedIdentity = $contractConfigResult.mi
 
-Write-Host "Assigning permissions to the managed identity on the storage account"
 # Cleanroom needs both read/write permissions on storage account, hence assigning Storage Blob Data Contributor.
+$role = "Storage Blob Data Contributor"
+Write-Host -ForegroundColor Gray `
+    "Assigning permission for '$role' to '$($managedIdentity.name)' on " `
+    "storage account '$($environmentConfigResult.sa.name)'"
 az role assignment create `
     --role "Storage Blob Data Contributor" `
-    --scope $resourceConfigResult.sa.id `
+    --scope $environmentConfigResult.sa.id `
     --assignee-object-id $managedIdentity.principalId `
     --assignee-principal-type ServicePrincipal
 CheckLastExitCode
 
+# KEK vault access.
+$kekVault = $environmentConfigResult.kek.kv
 if ($kekVault.type -eq "Microsoft.KeyVault/managedHSMs") {
-    Write-Host "Assigning permissions to the managed identity on the HSM"
+    $role = "Managed HSM Crypto User"
+
     $roleAssignment = (az keyvault role assignment list `
             --assignee-object-id $managedIdentity.principalId `
             --hsm-name $kekVault.name `
-            --role "Managed HSM Crypto User") | ConvertFrom-Json
-
+            --role $role) | ConvertFrom-Json
     if ($roleAssignment.Length -eq 1) {
-        Write-Host "Crypto User permission for managed identity on the HSM already exists, skipping assignment"
+        Write-Host -ForegroundColor Yellow `
+            "Skipping assignment as '$role' permission already exists for " `
+            "'$($managedIdentity.name)' on mHSM '$($kekVault.name)'."
     }
     else {
-        Write-Host "Assigning Crypto User permission to the managed identity on the HSM"
+        Write-Host -ForegroundColor Gray `
+            "Assigning permissions for '$role' to '$($managedIdentity.name)' on " `
+            "mHSM '$($kekVault.name)'"
         az keyvault role assignment create `
-            --role "Managed HSM Crypto User" `
+            --role $role `
             --scope "/" `
             --assignee-object-id $managedIdentity.principalId `
             --hsm-name $kekVault.name `
@@ -73,17 +91,21 @@ if ($kekVault.type -eq "Microsoft.KeyVault/managedHSMs") {
     }
 }
 elseif ($kekVault.type -eq "Microsoft.KeyVault/vaults") {
-    Write-Host "Assigning permissions to the managed identity on the Key Vault"
+    $role = "Key Vault Crypto Officer"
+
     $roleAssignment = (az role assignment list `
             --assignee $managedIdentity.principalId `
             --scope $kekVault.id `
-            --role "Key Vault Crypto Officer") | ConvertFrom-Json
-
+            --role $role) | ConvertFrom-Json
     if ($roleAssignment.Length -eq 1) {
-        Write-Host "Key Vault Crypto Officer permission for managed identity on the key vault already exists, skipping assignment"
+        Write-Host -ForegroundColor Yellow `
+            "Skipping assignment as '$role' permission already exists for " `
+            "'$($managedIdentity.name)' on key vault '$($kekVault.name)'."
     }
     else {
-        Write-Host "Assigning Key Vault Crypto Officer to the managed identity on the Key Vault"
+        Write-Host -ForegroundColor Gray `
+            "Assigning permissions for '$role' to '$($managedIdentity.name)' on " `
+            "key vault '$($kekVault.name)'"
         az role assignment create `
             --role "Key Vault Crypto Officer" `
             --scope $kekVault.id `
@@ -93,48 +115,63 @@ elseif ($kekVault.type -eq "Microsoft.KeyVault/vaults") {
     }
 }
 
-Write-Host "Assigning Secrets User permission to the managed identity on the Key Vault"
+# DEK vault access.
+$dekVault = $environmentConfigResult.dek.kv
+$role = "Key Vault Secrets User"
+Write-Host -ForegroundColor Gray `
+    "Assigning permission for '$role' to '$($managedIdentity.name)' on " `
+    "storage account '$($dekVault.name)'"
 az role assignment create `
-    --role "Key Vault Secrets User" `
+    --role  `
     --scope $dekVault.id `
     --assignee-object-id $managedIdentity.principalId `
     --assignee-principal-type ServicePrincipal
 CheckLastExitCode
 
 #
-# Setup OIDC issuer and federated credential on managed identity.
+# Setup OIDC issuer for tenant.
 #
 $tenantId = az account show --query "tenantId" --output tsv
 $tenantData = (az cleanroom governance oidc-issuer show `
         --governance-client $cgsClient `
         --query "tenantData" | ConvertFrom-Json)
 if ($null -ne $tenantData -and $tenantData.tenantId -eq $tenantId) {
-    Write-Host -ForegroundColor Yellow "OIDC issuer already set for the tenant, skipping."
     $issuerUrl = $tenantData.issuerUrl
+    Write-Host -ForegroundColor Yellow `
+        "OIDC issuer already set for tenant '$tenantId' to '$issuerUrl'. Skipping!"
 }
 else {
-    Write-Host "Setting up OIDC issuer for the tenant $tenantId"
+    $oidcsa = $environmentConfigResult.oidcsa.name
+    Write-Host -ForegroundColor Gray `
+        "Setting up OIDC issuer for tenant '$tenantId' using storage account '$oidcsa'..."
 
-    Write-Host "Enabling public blob access for $($resourceConfigResult.oidcsa.name)"
     az storage account update --allow-blob-public-access true `
-        --name $resourceConfigResult.oidcsa.name
+        --name $oidcsa
+    Write-Host -ForegroundColor Yellow `
+        "Enabled public blob access for '$oidcsa'."
 
     $sleepTime = 30
-    Write-Host "Waiting for $sleepTime seconds for public blob access to be enabled..."
+    Write-Host -ForegroundColor Gray `
+        "Waiting for $sleepTime seconds for public blob access to be enabled..."
     Start-Sleep -Seconds $sleepTime
 
-    Write-Host "Creating public access blob container '$oidcContainerName' in $($resourceConfigResult.oidcsa.name)"
+    Write-Host -ForegroundColor Gray `
+        "Creating public access blob container '$oidcContainerName' in '$oidcsa'..."
     az storage container create `
         --name $oidcContainerName `
-        --account-name $resourceConfigResult.oidcsa.name `
+        --account-name $oidcsa `
         --public-access blob `
         --auth-mode login
     CheckLastExitCode
+    Write-Host -ForegroundColor Yellow `
+        "Created public access blob container '$oidcContainerName' in '$oidcsa'."
 
+    Write-Host -ForegroundColor Gray `
+        "Uploading openid-configuration to container '$oidcContainerName' in '$oidcsa'..."
     @"
 {
-"issuer": "https://$($resourceConfigResult.oidcsa.name).blob.core.windows.net/$oidcContainerName",
-"jwks_uri": "https://$($resourceConfigResult.oidcsa.name).blob.core.windows.net/$oidcContainerName/openid/v1/jwks",
+"issuer": "https://$oidcsa.blob.core.windows.net/$oidcContainerName",
+"jwks_uri": "https://$oidcsa.blob.core.windows.net/$oidcContainerName/openid/v1/jwks",
 "response_types_supported": [
 "id_token"
 ],
@@ -145,58 +182,62 @@ else {
 "RS256"
 ]
 }
-"@ > $privateDir/openid-configuration.json
-
+"@ | Out-File $privateDir/openid-configuration.json
     az storage blob upload `
         --container-name $oidcContainerName `
         --file $privateDir/openid-configuration.json `
         --name .well-known/openid-configuration `
-        --account-name $resourceConfigResult.oidcsa.name `
+        --account-name $oidcsa `
         --overwrite `
         --auth-mode login
     CheckLastExitCode
 
-    $ccfEndpoint = (Get-Content "$publicDir/ccfEndpoint")
-    $url = "$($ccfEndpoint.ccfEndpoint)/app/oidc/keys"
-    curl -s -k $url | jq > $privateDir/jwks.json
-
+    Write-Host -ForegroundColor Gray `
+        "Uploading jwks to container '$oidcContainerName' in '$oidcsa'..."
+    $url = "$ccfEndpoint/app/oidc/keys"
+    curl -s -k $url | jq | Out-File $privateDir/jwks.json
     az storage blob upload `
         --container-name $oidcContainerName `
         --file $privateDir/jwks.json `
         --name openid/v1/jwks `
-        --account-name $resourceConfigResult.oidcsa.name `
+        --account-name $oidcsa `
         --overwrite `
         --auth-mode login
     CheckLastExitCode
 
+    Write-Host -ForegroundColor Gray `
+        "Setting OIDC issuer for tenant '$tenantId'..."
     az cleanroom governance oidc-issuer set-issuer-url `
         --governance-client $cgsClient `
-        --url "https://$($resourceConfigResult.oidcsa.name).blob.core.windows.net/$oidcContainerName"
+        --url "https://$oidcsa.blob.core.windows.net/$oidcContainerName"
     $tenantData = (az cleanroom governance oidc-issuer show `
             --governance-client $cgsClient `
             --query "tenantData" | ConvertFrom-Json)
     $issuerUrl = $tenantData.issuerUrl
+
+    Write-Host -ForegroundColor Yellow `
+        "Set OIDC issuer for tenant '$tenantId' to '$issuerUrl'."
 }
 
-Write-Host "Setting up federation on managed identity with issuerUrl $issuerUrl and subject $contractId"
+#
+# Setup federated credential on managed identity.
+#
+Write-Host -ForegroundColor Gray `
+    "Setting up federation on managed identity '$($managedIdentity.name)' for " `
+    "issuer '$issuerUrl' and subject '$contractId'..."
 az identity federated-credential create `
     --name "$contractId-federation" `
-    --identity-name $collabConfigResult.mi.name `
+    --identity-name $managedIdentity.name `
     --resource-group $resourceGroup `
     --issuer $issuerUrl `
     --subject $contractId
 
 # See Note at https://learn.microsoft.com/en-us/azure/aks/workload-identity-deploy-cluster#create-the-federated-identity-credential
 $sleepTime = 30
-Write-Host "Waiting for $sleepTime seconds for federated identity credential to propagate after it is added"
+Write-Host -ForegroundColor Gray `
+    "Waiting for $sleepTime seconds for federated identity credential to propagate..."
 Start-Sleep -Seconds $sleepTime
 
-
-function Get-Assignee-Principal-Type {
-    if ($env:GITHUB_ACTIONS -eq "true") {
-        return "ServicePrincipal"
-    }
-    else {
-        return "User"
-    }
-}
+Write-Host -ForegroundColor Yellow `
+    "Granted access to resources required for '$scenario' scenario to deployments implementing " `
+    "contract '$contractId' through federation on managed identity '$($managedIdentity.name)'." 

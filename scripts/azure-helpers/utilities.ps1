@@ -1,3 +1,9 @@
+# https://learn.microsoft.com/en-us/archive/blogs/389thoughts/get-uniquestring-generate-unique-id-for-azure-deployments
+function Get-UniqueString ([string]$id, $length = 13) {
+    $hashArray = (new-object System.Security.Cryptography.SHA512Managed).ComputeHash($id.ToCharArray())
+    -join ($hashArray[1..$length] | ForEach-Object { [char]($_ % 26 + [byte][char]'a') })
+}
+
 function Replace-Strings {
     param (
         [string]$filePath,

@@ -2,14 +2,15 @@ param(
     [Parameter(Mandatory = $true)]
     [ValidateSet("cleanroomhello-job", "cleanroomhello-api", "analytics")]
     [string]$scenario,
-    [string]$persona = "$env:MEMBER_NAME",
+    [string]$persona = "$env:PERSONA",
 
-    [string]$privateDir = "./demo-resources.private",
-    [string]$demosDir = "./demos",
+    [string]$samplesRoot = "/home/samples",
+    [string]$privateDir = "$samplesRoot/demo-resources.private",
+    [string]$scenarioRoot = "$samplesRoot/scenario",
 
     [string]$datastoreConfig = "$privateDir/datastores.config",
     [string]$datastoreDir = "$privateDir/datastores",
-    [string]$datasinkPath = "$demosDir/$scenario/datasink/$persona"
+    [string]$datasinkPath = "$scenarioRoot/$scenario/datasink/$persona"
 )
 
 if (Test-Path -Path $datasinkPath)
@@ -18,15 +19,19 @@ if (Test-Path -Path $datasinkPath)
     foreach ($dir in $dirs)
     {
         $datastoreName = "$scenario-$persona-$dir".ToLower()
-
         az cleanroom datastore download `
             --name $datastoreName `
             --config $datastoreConfig `
             --dst $datastoreDir
+        $dataDir = "$datastoreDir/$datastoreName"
+        Write-Host -ForegroundColor Yellow `
+            "Downloaded data for datasink '$($persona-$dir.ToLower())' ($datastoreName) " `
+            "to '$dataDir'."
     }
 }
 else
 {
-    Write-Host "No data download required for persona '$persona' in scenario '$scenario'."
+    Write-Host -ForegroundColor Yellow `
+        "No data download required for persona '$persona' in scenario '$scenario'."
 }
 

@@ -1,1 +1,0 @@
-docker build -f ./Dockerfile.train src -t depa-training:latest

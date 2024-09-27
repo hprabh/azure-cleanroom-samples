@@ -3,34 +3,29 @@ param(
     [string]$kvType = "akvpremium",
 
     [string]$resourceGroup = "$env:RESOURCE_GROUP",
+    [string]$resourceGroupLocation = "$env:RESOURCE_GROUP_LOCATION",
 
-    [string]$privateDir = "./demo-resources.private",
+    [string]$samplesRoot = "/home/samples",
+    [string]$privateDir = "$samplesRoot/demo-resources.private",
 
-    [string]$backupKv = "",
+    [string]$maaEndpoint = "https://sharedneu.neu.attest.azure.net",
+
     [string]$overridesFilePath = "",
-    [string]$resourceGroupTags = ""
+    [string]$resourceGroupTags = "",
+
+    [string]$environmentConfig = "$privateDir/$resourceGroup.generated.json"
 )
 
+#https://learn.microsoft.com/en-us/powershell/scripting/learn/experimental-features?view=powershell-7.4#psnativecommanderroractionpreference
 $ErrorActionPreference = 'Stop'
+$PSNativeCommandUseErrorActionPreference = $true
 
 Import-Module $PSScriptRoot/azure-helpers/azure-helpers.psm1 -Force -DisableNameChecking
 
-mkdir -p $privateDir
+Write-Host -ForegroundColor Gray `
+    "Creating resource group '$resourceGroup' in '$resourceGroupLocation'..."
+az group create --location $resourceGroupLocation --name $resourceGroup --tags $resourceGroupTags
 
-pwsh $PSScriptRoot/azure-helpers/generate-names.ps1 `
-    -resourceGroup $resourceGroup `
-    -kvType $kvType `
-    -overridesFilePath $overridesFilePath `
-    -backupKv $backupKv `
-    -outDir $privateDir
-
-. $privateDir/names.generated.ps1
-$sandbox_common = $privateDir
-
-Write-Host "Creating resource group $resourceGroup in $RESOURCE_GROUP_LOCATION"
-az group create --location $RESOURCE_GROUP_LOCATION --name $resourceGroup --tags $resourceGroupTags
-
-$objectId = GetLoggedInEntityObjectId
 $result = @{
     kek          = @{}
     dek          = @{}
@@ -39,48 +34,63 @@ $result = @{
     maa_endpoint = ""
 }
 
-# TODO(phanic): The following is not required for non collaborators.
+$uniqueString = Get-UniqueString($resourceGroup)
+if ($overridesFilePath -ne "") {
+    $overrides = Get-Content $overridesFilePath | Out-String | ConvertFrom-StringData
+}
+else {
+    $overrides = @{}
+}
 
+# TODO(phanic): Scrub the resource creation required for non-collaborator personas.
+$objectId = GetLoggedInEntityObjectId
+$kvName = $($overrides['$KEYVAULT_NAME'] ?? "${uniqueString}kv")
+$mhsmName = $($overrides['$MHSM_NAME'] ?? "${uniqueString}mhsm")
 if ($kvType -eq "mhsm") {
-    Write-Host "Creating HSM $MHSM_NAME in resource group $resourceGroup"
+    Write-Host -ForegroundColor Gray `
+        "Creating HSM '$mhsmName' in resource group '$resourceGroup'..."
     $keyStore = Create-Hsm `
         -resourceGroup $resourceGroup `
-        -hsmName $MHSM_NAME `
+        -hsmName $mhsmName `
         -adminObjectId $objectId `
-        -privateDir $sandbox_common
+        -privateDir $privateDir
 
     $result.kek.kv = $keyStore
     # Creating the Key Vault upfront so as not to run into naming issues
     # while storing the wrapped DEK
-    Write-Host "Creating Key Vault to store the wrapped DEK"
+    Write-Host -ForegroundColor Gray `
+        "Creating Key Vault '$kvName' to store the wrapped DEK..."
     $result.dek.kv = Create-KeyVault `
         -resourceGroup $resourceGroup `
-        -keyVaultName $KEYVAULT_NAME `
+        -keyVaultName $kvName `
         -adminObjectId $objectId
 }
 else {
-    Write-Host "Creating Key Vault $KEYVAULT_NAME in resource group $resourceGroup"
+    Write-Host -ForegroundColor Gray `
+        "Creating Key Vault '$kvName' in resource group '$resourceGroup'..."
     $result.kek.kv = Create-KeyVault `
         -resourceGroup $resourceGroup `
-        -keyVaultName $KEYVAULT_NAME `
+        -keyVaultName $kvName `
         -sku premium `
         -adminObjectId $objectId
     $result.dek.kv = $result.kek.kv
 }
 
-$storageAccount = Create-Storage-Resources `
+$saName = $($overrides['$STORAGE_ACCOUNT_NAME'] ?? "${uniqueString}sa")
+$result.sa = Create-Storage-Resources `
     -resourceGroup $resourceGroup `
-    -storageAccountName @($STORAGE_ACCOUNT_NAME) `
+    -storageAccountName @($saName) `
     -objectId $objectId
-$result.sa = $storageAccount
 
-$storageAccount = Create-Storage-Resources `
+$oidcsaName = $($overrides['$OIDC_STORAGE_ACCOUNT_NAME'] ?? "${uniqueString}oidcsa")
+$result.oidcsa = Create-Storage-Resources `
     -resourceGroup $resourceGroup `
-    -storageAccountName @($OIDC_STORAGE_ACCOUNT_NAME) `
+    -storageAccountName @($oidcsaName) `
     -objectId $objectId
-$result.oidcsa = $storageAccount
 
-$result.maa_endpoint = $MAA_URL
+$result.maa_endpoint = $maaEndpoint
 
-$result | ConvertTo-Json -Depth 100 > "$privateDir/$resourceGroup.generated.json"
+$result | ConvertTo-Json -Depth 100 | Out-File "$environmentConfig"
+Write-Host -ForegroundColor Yellow `
+    "Initialization configuration written to '$environmentConfig'."
 return $result

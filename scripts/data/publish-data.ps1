@@ -3,27 +3,35 @@ param(
     [ValidateSet("cleanroomhello-job", "cleanroomhello-api", "analytics")]
     [string]$scenario,
 
-    [string]$persona = "$env:MEMBER_NAME",
+    [string]$persona = "$env:PERSONA",
     [string]$resourceGroup = "$env:RESOURCE_GROUP",
 
-    [string]$privateDir = "./demo-resources.private",
-    [string]$secretDir = "./demo-resources.secret",
-    [string]$demosDir = "./demos",
+    [string]$samplesRoot = "/home/samples",
+    [string]$privateDir = "$samplesRoot/demo-resources.private",
+    [string]$secretDir = "$samplesRoot/demo-resources.secret",
+    [string]$scenarioRoot = "$samplesRoot/scenario",
     [string]$sa = "",
 
-    [string]$resourceConfig = "$privateDir/$resourceGroup.generated.json",
+    [string]$environmentConfig = "$privateDir/$resourceGroup.generated.json",
     [string]$keyStore = "$secretDir/keys",
     [string]$datastoreConfig = "$privateDir/datastores.config",
     [string]$datastoreDir = "$privateDir/datastores",
-    [string]$datasourcePath = "$demosDir/$scenario/datasource/$persona",
-    [string]$datasinkPath = "$demosDir/$scenario/datasink/$persona"
+    [string]$datasourcePath = "$scenarioRoot/$scenario/datasource/$persona",
+    [string]$datasinkPath = "$scenarioRoot/$scenario/datasink/$persona"
 )
+
+#https://learn.microsoft.com/en-us/powershell/scripting/learn/experimental-features?view=powershell-7.4#psnativecommanderroractionpreference
+$ErrorActionPreference = 'Stop'
+$PSNativeCommandUseErrorActionPreference = $true
 
 if ($sa -eq "")
 {
-    $initResult = Get-Content $resourceConfig | ConvertFrom-Json
+    $initResult = Get-Content $environmentConfig | ConvertFrom-Json
     $sa = $initResult.sa.id
 }
+
+Write-Host -ForegroundColor Gray `
+    "Creating data stores for '$scenario' scenario in '$sa'..."
 
 if (Test-Path -Path $datasourcePath)
 {
@@ -31,8 +39,9 @@ if (Test-Path -Path $datasourcePath)
     foreach ($dir in $dirs)
     {
         $datastoreName = "$scenario-$persona-$dir".ToLower()
+        Write-Host -ForegroundColor Gray `
+            "Enumerated datasink '$datastoreName' in '$datasourcePath'..."
 
-        Write-Host "Found datastore $datastoreName in $datasourcePath"
         az cleanroom datastore add `
             --name $datastoreName `
             --config $datastoreConfig `
@@ -40,20 +49,24 @@ if (Test-Path -Path $datasourcePath)
             --encryption-mode CPK `
             --backingstore-type Azure_BlobStorage `
             --backingstore-id $sa
-
         $datastorePath = "$datastoreDir/$datastoreName"
         mkdir -p $datastorePath
-        cp -r $datasourcePath/$dir/* $datastorePath
+        Write-Host -ForegroundColor Yellow `
+            "Created data store '$datastoreName' backed by '$sa'."
 
+        cp -r $datasourcePath/$dir/* $datastorePath
         az cleanroom datastore upload `
             --name $datastoreName `
             --config $datastoreConfig `
             --src $datastorePath
+        Write-Host -ForegroundColor Yellow `
+            "Published data from '$datasourcePath/$dir' as data store '$datastoreName'."
     }
 }
 else
 {
-    Write-Host "No datastore found in $datasourcePath."
+    Write-Host -ForegroundColor Yellow `
+        "No datasource required for persona '$persona' in scenario '$scenario'."
 }
 
 
@@ -63,8 +76,9 @@ if (Test-Path -Path $datasinkPath)
     foreach ($dir in $dirs)
     {
         $datastoreName = "$scenario-$persona-$dir".ToLower()
+        Write-Host -ForegroundColor Gray `
+            "Enumerated datasink '$datastoreName' in '$datasinkPath'..."
 
-        Write-Host "Found datastore $datastoreName in $datasinkPath"
         az cleanroom datastore add `
             --name $datastoreName `
             --config $datastoreConfig `
@@ -72,12 +86,14 @@ if (Test-Path -Path $datasinkPath)
             --encryption-mode CPK `
             --backingstore-type Azure_BlobStorage `
             --backingstore-id $sa
-
         $datastorePath = "$datastoreDir/$datastoreName"
         mkdir -p $datastorePath
+        Write-Host -ForegroundColor Yellow `
+            "Created data store '$datastoreName' backed by '$sa'."
     }
 }
 else
 {
-    Write-Host "No datastore found in $datasinkPath."
+    Write-Host -ForegroundColor Yellow `
+        "No datasink required for persona '$persona' in scenario '$scenario'."
 }

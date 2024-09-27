@@ -2,10 +2,15 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$contractId,
 
-    [string]$cgsClient = "$env:MEMBER_NAME-client"
+    [string]$cgsClient = "$env:PERSONA-client"
 )
 
-Write-Host -ForegroundColor Yellow "Placeholder: Logic to showcase proposal verification is pending"
+#https://learn.microsoft.com/en-us/powershell/scripting/learn/experimental-features?view=powershell-7.4#psnativecommanderroractionpreference
+$ErrorActionPreference = 'Stop'
+$PSNativeCommandUseErrorActionPreference = $true
+
+Write-Host -ForegroundColor Gray `
+    "Accepting deployment artefacts for '$contractId'..." 
 
 # Vote on the proposed deployment template.
 $proposalId = az cleanroom governance deployment template show `
@@ -13,16 +18,19 @@ $proposalId = az cleanroom governance deployment template show `
     --governance-client $cgsClient `
     --query "proposalIds[0]" `
     --output tsv
-
-Write-Host -ForegroundColor Yellow "Accepting deployment template ($proposalId)..."
+Write-Host -ForegroundColor Gray `
+    "Accepting deployment template proposal '$proposalId'..."
 az cleanroom governance proposal show-actions `
     --proposal-id $proposalId `
     --query "actions[0].args.spec.data" `
     --governance-client $cgsClient
+# TODO (phanic): Logic to showcase template verification is pending.
 az cleanroom governance proposal vote `
     --proposal-id $proposalId `
     --action accept `
     --governance-client $cgsClient
+Write-Host -ForegroundColor Yellow `
+    "Accepted deployment template for '$contractId'."
 
 # Vote on the proposed cce policy.
 $proposalId = az cleanroom governance deployment policy show `
@@ -30,16 +38,19 @@ $proposalId = az cleanroom governance deployment policy show `
     --governance-client $cgsClient `
     --query "proposalIds[0]" `
     --output tsv
-
-Write-Host -ForegroundColor Yellow "Accepting deployment policy ($proposalId)..."
+Write-Host -ForegroundColor Gray `
+    "Accepting deployment policy proposal '$proposalId'..."
 az cleanroom governance proposal show-actions `
     --proposal-id $proposalId `
     --query "actions[0].args" `
     --governance-client $cgsClient
+# TODO (phanic): Logic to showcase policy verification is pending.
 az cleanroom governance proposal vote `
     --proposal-id $proposalId `
     --action accept `
     --governance-client $cgsClient
+Write-Host -ForegroundColor Yellow `
+    "Accepted deployment policy for '$contractId'."
 
 # Vote on the enable logging proposal.
 $proposalId = az cleanroom governance contract runtime-option get `
@@ -48,12 +59,14 @@ $proposalId = az cleanroom governance contract runtime-option get `
     --governance-client $cgsClient `
     --query "proposalIds[0]" `
     --output tsv
-
-Write-Host -ForegroundColor Yellow "Accepting enable logging ($proposalId)..."
+Write-Host -ForegroundColor Gray `
+    "Accepting enable logging proposal '$proposalId'..."
 az cleanroom governance proposal vote `
     --proposal-id $proposalId `
     --action accept `
     --governance-client $cgsClient
+Write-Host -ForegroundColor Yellow `
+    "Accepted enabling application telemetry for '$contractId'."
 
 # Vote on the enable telemetry proposal.
 $proposalId = az cleanroom governance contract runtime-option get `
@@ -62,9 +75,11 @@ $proposalId = az cleanroom governance contract runtime-option get `
     --governance-client $cgsClient `
     --query "proposalIds[0]" `
     --output tsv
-
-Write-Host -ForegroundColor Yellow "Accepting enable telemetry ($proposalId)..."
+Write-Host -ForegroundColor Gray `
+    "Accepting enable telemetry proposal '$proposalId'..."
 az cleanroom governance proposal vote `
     --proposal-id $proposalId `
     --action accept `
     --governance-client $cgsClient
+Write-Host -ForegroundColor Yellow `
+    "Accepted enabling infrastructure telemetry for '$contractId'."

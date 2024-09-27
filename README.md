@@ -107,14 +107,15 @@ In all cases, a CCR will be executed to run the application while protecting the
 All the involved parties need to bring up a local environment to participate in the sample collaborations.
 
 ## Bringing up the environment
-> [!NOTE] Prerequisites to bring up the environment
+> [!NOTE]
+> Prerequisites to bring up the environment
 > * Docker installed locally. Installation instructions [here](https://docs.docker.com/engine/install/).
 > * Powershell installed locally. Installation instructions [here](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell).
 
 ```powershell
 # Launch a pre-built docker container to create an environment in the context of one of the parties.
-$memberName = "<persona>" # ("litware", "fabrikam", "contosso", "client", "operator")
-./start-environment.ps1 -memberName $memberName
+$persona = "<persona>" # ("litware", "fabrikam", "contosso", "client", "operator")
+./start-environment.ps1 -persona $persona
 ```
 
 <br>
@@ -134,17 +135,20 @@ $memberName = "<persona>" # ("litware", "fabrikam", "contosso", "client", "opera
   1. openssl - Download instructions for Linux [here](https://www.openssl.org/source/).
   1. jq - Download / install instructions for Linux [here](https://jqlang.github.io/jq/download/).
   1. Add the CleanRoom Azure CLI extension using:
+
       ```powershell
       az extension add --source https://cleanroomazcli.blob.core.windows.net/azcli/cleanroom-0.0.3-py2.py3-none-any.whl -y --allow-preview true
       ```
-  1. Set the environment variable "MEMBER_NAME" to one of the following parties - "litware", "fabrikam", "contosso", "client", "operator"
+
+  1. Set the environment variable "PERSONA" to one of the following parties - "litware", "fabrikam", "contosso", "client", "operator"
   1. Set the environment variable "RESOURCE_GROUP" to the name of Azure Resource Group to be used for creating resources.
 
 </details>
 <br>
 
 ## Initializing the environment
-> [!NOTE] Prerequisites to initialize the environment
+> [!NOTE]
+> Prerequisites to initialize the environment
 > * An Azure subscription with adequate permissions to create resources and manage permissions on these resources.
 
 Once the environment is setup, initialize it for executing the samples by executing the following command from the `/home/samples` directory:
@@ -414,7 +418,7 @@ $scenario = "<scenario>" # ("cleanroomhello-job", "cleanroomhello-api", "analyti
 
 # Publish data. 
 #
-# Data publisher persona is picked from $env:MEMBER_NAME by default, use -persona to override.
+# Data publisher persona is picked from $env:PERSONA by default, use -persona to override.
 # Storage account is picked from ./demo-resources.private/$env:RESOURCE_GROUP.generated.json by default, use -sa to override.
 #
 ./scripts/data/publish-data.ps1 -scenario $scenario
@@ -469,7 +473,7 @@ The following command adds details about the (containerized) application to be e
 
 
 ```powershell
-pwsh ./demos/$scenario/add-specification-application.ps1
+pwsh ./scenario/$scenario/add-specification-application.ps1
 ```
 
 
@@ -685,7 +689,7 @@ This command downloads all the files from the storage container into a local fol
 
 
 ```powershell
-pwsh ./demos/$scenario/show-output.ps1
+pwsh ./scenario/$scenario/show-output.ps1
 ```
 
 

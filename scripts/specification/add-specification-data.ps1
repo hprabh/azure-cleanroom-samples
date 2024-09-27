@@ -3,21 +3,30 @@ param(
     [ValidateSet("cleanroomhello-job", "cleanroomhello-api", "analytics")]
     [string]$scenario,
 
-    [string]$persona = "$env:MEMBER_NAME",
+    [string]$persona = "$env:PERSONA",
     [string]$resourceGroup = "$env:RESOURCE_GROUP",
 
-    [string]$privateDir = "./demo-resources.private",
-    [string]$demosDir = "./demos",
+    [string]$samplesRoot = "/home/samples",
+    [string]$privateDir = "$samplesRoot/demo-resources.private",
+    [string]$scenarioRoot = "$samplesRoot/scenario",
 
-    [string]$collabConfig = "$privateDir/$resourceGroup-$scenario.generated.json",
-    [string]$resourceConfig = "$privateDir/$resourceGroup.generated.json",
+    [string]$contractConfig = "$privateDir/$resourceGroup-$scenario.generated.json",
+    [string]$environmentConfig = "$privateDir/$resourceGroup.generated.json",
     [string]$datastoreConfig = "$privateDir/datastores.config",
-    [string]$datasourcePath = "$demosDir/$scenario/datasource/$persona",
-    [string]$datasinkPath = "$demosDir/$scenario/datasink/$persona"
+    [string]$datasourcePath = "$scenarioRoot/$scenario/datasource/$persona",
+    [string]$datasinkPath = "$scenarioRoot/$scenario/datasink/$persona"
 )
 
-$collabConfigResult = Get-Content $collabConfig | ConvertFrom-Json
-$resourceConfigResult = Get-Content $resourceConfig | ConvertFrom-Json
+#https://learn.microsoft.com/en-us/powershell/scripting/learn/experimental-features?view=powershell-7.4#psnativecommanderroractionpreference
+$ErrorActionPreference = 'Stop'
+$PSNativeCommandUseErrorActionPreference = $true
+
+$contractConfigResult = Get-Content $contractConfig | ConvertFrom-Json
+$environmentConfigResult = Get-Content $environmentConfig | ConvertFrom-Json
+
+Write-Host -ForegroundColor Gray `
+    "Adding datasources and datasinks for '$persona' in the '$scenario' scenario to " `
+    "'$($contractConfigResult.contractFragment)'..."
 
 if (Test-Path -Path $datasourcePath)
 {
@@ -26,21 +35,22 @@ if (Test-Path -Path $datasourcePath)
     {
         $datastoreName = "$scenario-$persona-$dir".ToLower()
         $datasourceName = "$persona-$dir".ToLower()
-    
         az cleanroom config add-datasource `
-            --cleanroom-config $collabConfigResult.configFile `
+            --cleanroom-config $contractConfigResult.contractFragment `
             --name $datasourceName `
             --datastore-config $datastoreConfig `
             --datastore-name $datastoreName `
-            --key-vault $resourceConfigResult.dek.kv.id `
+            --key-vault $environmentConfigResult.dek.kv.id `
             --identity "$persona-identity"
+        Write-Host -ForegroundColor Yellow `
+            "Added datasource '$datasourceName' ($datastoreName)."
     }
 }
 else
 {
-    Write-Host "No datasource required for persona '$persona' in scenario '$scenario'."
+    Write-Host -ForegroundColor Yellow `
+        "No datasource required for persona '$persona' in scenario '$scenario'."
 }
-
 
 if (Test-Path -Path $datasinkPath)
 {
@@ -49,17 +59,19 @@ if (Test-Path -Path $datasinkPath)
     {
         $datastoreName = "$scenario-$persona-$dir".ToLower()
         $datasinkName = "$persona-$dir".ToLower()
-    
         az cleanroom config add-datasink `
-            --cleanroom-config $collabConfigResult.configFile `
+            --cleanroom-config $contractConfigResult.contractFragment `
             --name $datasinkName `
             --datastore-config $datastoreConfig `
             --datastore-name $datastoreName `
-            --key-vault $resourceConfigResult.dek.kv.id `
+            --key-vault $environmentConfigResult.dek.kv.id `
             --identity "$persona-identity"
+        Write-Host -ForegroundColor Yellow `
+            "Added datasink '$datasinkName' ($datastoreName)."
     }
 }
 else
 {
-    Write-Host "No datasink required for persona '$persona' in scenario '$scenario'."
+    Write-Host -ForegroundColor Yellow `
+        "No datasink required for persona '$persona' in scenario '$scenario'."
 }

@@ -1,15 +1,23 @@
 param(
+    [string]$persona = "$env:PERSONA",
+
     [string[]]$collaborators = ('litware', 'fabrikam', 'contosso'),
 
-    [string]$cgsClient = "$env:MEMBER_NAME-client",
+    [string]$samplesRoot = "/home/samples",
+    [string]$publicDir = "$samplesRoot/demo-resources.public",
 
-    [string]$publicDir = "./demo-resources.public"
+    [string]$cgsClient = "$persona-client"
 )
+
+#https://learn.microsoft.com/en-us/powershell/scripting/learn/experimental-features?view=powershell-7.4#psnativecommanderroractionpreference
+$ErrorActionPreference = 'Stop'
+$PSNativeCommandUseErrorActionPreference = $true
+
+Write-Host -ForegroundColor Gray `
+    "Adding '$collaborators' to the consortium..." 
 
 foreach ($collaboratorName in $collaborators)
 {
-    Write-Host "Registering member '$collaboratorName'"
-
     # Makes a proposal for adding the new member.
     $proposalId = (az cleanroom governance member add `
         --certificate $publicDir/$($collaboratorName)_cert.pem `
@@ -24,4 +32,7 @@ foreach ($collaboratorName in $collaborators)
         --proposal-id $proposalId `
         --action accept `
         --governance-client $cgsClient
+
+    Write-Host -ForegroundColor Yellow `
+        "Added '$collaboratorName' to the consortium."
 }

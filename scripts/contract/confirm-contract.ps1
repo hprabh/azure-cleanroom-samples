@@ -2,8 +2,15 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$contractId,
 
-    [string]$cgsClient = "$env:MEMBER_NAME-client"
+    [string]$cgsClient = "$env:PERSONA-client"
 )
+
+#https://learn.microsoft.com/en-us/powershell/scripting/learn/experimental-features?view=powershell-7.4#psnativecommanderroractionpreference
+$ErrorActionPreference = 'Stop'
+$PSNativeCommandUseErrorActionPreference = $true
+
+Write-Host -ForegroundColor Gray `
+    "Accepting contract '$contractId'..." 
 
 $contract = (az cleanroom governance contract show `
     --id $contractId `
@@ -18,3 +25,7 @@ az cleanroom governance contract vote `
     --proposal-id $contract.proposalId `
     --action accept `
     --governance-client $cgsClient
+
+Write-Host -ForegroundColor Yellow `
+    "Accepted contract '$contractId'." 
+

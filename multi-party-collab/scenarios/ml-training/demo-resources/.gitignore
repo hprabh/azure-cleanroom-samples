@@ -1,7 +1,0 @@
-# On running the sample this folder contains files that has the name of the various Azure resources
-# that get created as part of demo preparation.
-*.generated.ps1
-cleanroom-config
-*.json
-*.pem
-*.rego
