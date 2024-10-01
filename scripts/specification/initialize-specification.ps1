@@ -1,7 +1,7 @@
 param(
     [Parameter(Mandatory = $true)]
     [ValidateSet("cleanroomhello-job", "cleanroomhello-api", "analytics")]
-    [string]$scenario,
+    [string]$demo,
 
     [string]$persona = "$env:PERSONA",
     [string]$resourceGroup = "$env:RESOURCE_GROUP",
@@ -11,8 +11,8 @@ param(
     [string]$publicDir = "$samplesRoot/demo-resources.public",
 
     [string]$environmentConfig = "$privateDir/$resourceGroup.generated.json",
-    [string]$contractConfig = "$privateDir/$resourceGroup-$scenario.generated.json",
-    [string]$contractFragment = "$publicDir/$persona-$scenario.config",
+    [string]$contractConfig = "$privateDir/$resourceGroup-$demo.generated.json",
+    [string]$contractFragment = "$publicDir/$persona-$demo.config",
 
     [string]$managedIdentityName = ""
 )
@@ -35,7 +35,7 @@ az cleanroom config set-kek `
 if ($managedIdentityName -eq "")
 {
     $uniqueString = Get-UniqueString($resourceGroup)
-    $managedIdentityName = "${uniqueString}-mi-$scenario"
+    $managedIdentityName = "${uniqueString}-mi-$demo"
 }
 
 Write-Host -ForegroundColor Gray `

@@ -9,25 +9,25 @@ param(
     [string]$samplesRoot = "/home/samples",
     [string]$privateDir = "$samplesRoot/demo-resources.private",
 
-    [string]$scenario = "$(Split-Path $PSScriptRoot -Leaf)",
-    [string]$contractConfig = "$privateDir/$resourceGroup-$scenario.generated.json"
+    [string]$demo = "$(Split-Path $PSScriptRoot -Leaf)",
+    [string]$contractConfig = "$privateDir/$resourceGroup-$demo.generated.json"
 )
 
 if (-not (("litware") -contains $persona))
 {
     Write-Host -ForegroundColor Yellow `
-        "No action required for persona '$persona' in scenario '$scenario'."
+        "No action required for persona '$persona' in demo '$demo'."
     return
 }
 
 $configResult = Get-Content $contractConfig | ConvertFrom-Json
 Write-Host -ForegroundColor Gray `
-    "Adding application details for '$persona' in the '$scenario' scenario to " `
+    "Adding application details for '$persona' in the '$demo' demo to " `
     "'$($configResult.contractFragment)'..."
 
 az cleanroom config add-application `
     --cleanroom-config $configResult.contractFragment `
-    --name demoapp-$scenario `
+    --name demoapp-$demo `
     --image $image `
     --command "python3.10 ./analytics.py" `
     --mounts "src=fabrikam-input,dst=/mnt/remote/fabrikam-input" `
@@ -39,8 +39,8 @@ az cleanroom config add-application `
 
 az cleanroom config add-application-endpoint `
     --cleanroom-config $configResult.contractFragment `
-    --application-name demoapp-$scenario `
+    --application-name demoapp-$demo `
     --port 8310
 
 Write-Host -ForegroundColor Yellow `
-    "Added application 'demoapp-$scenario' ($image)."
+    "Added application 'demoapp-$demo' ($image)."

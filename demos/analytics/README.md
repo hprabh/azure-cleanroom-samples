@@ -30,7 +30,7 @@ This sample demonstrates the following capabilities:
 - A consumer (party 2) that wants to run a engine that loads the data shared by the publisher. This party might also bring in its own dataset(s) into the collaboration.
 - Propose & use verified queries on the datasets and get results back as query output.
 
-A confidential clean room (CCR) will be setup to run the consumer's application while protecting the privacy of the data that is ingested or created as output for both the publisher and the consumer. This samples uses the [PySpark](https://pypi.org/project/pyspark/) engine to load the DB's into the memory, to demonstrate the approach which can be customized to real world scenarios.
+A confidential clean room (CCR) will be setup to run the consumer's application while protecting the privacy of the data that is ingested or created as output for both the publisher and the consumer. This samples uses the [PySpark](https://pypi.org/project/pyspark/) engine to load the DB's into the memory, to demonstrate the approach which can be customized to real world demos.
 
 # 3. High level execution sequence
 Before we begin below gives the overall flow of execution that happens in this sample. It gives a high level perspective that might be helpful to keep in mind as you run thru the steps.
@@ -71,7 +71,7 @@ Follow the steps to [create a consortium](../../README.md#5-setup-the-consortium
 sample. You can reuse the consortium if it was setup already.
  
 # 5. Publisher: Preparing encrypted datasets
-Follow the steps to [prepare datasets](../../README.md#6-publisher-preparing-encrypted-datasets) as in the main sample with a minor difference: for the command "az cleanroom datasource upload" use the dataset-folder value as "./scenarios/analytics/publisher-demo/publisher-input"
+Follow the steps to [prepare datasets](../../README.md#6-publisher-preparing-encrypted-datasets) as in the main sample with a minor difference: for the command "az cleanroom datasource upload" use the dataset-folder value as "./demos/analytics/publisher-demo/publisher-input"
 
 # 6. Publisher: Setting up log collection
 Follow the steps to [setup log collection](../../README.md#7-publisher-setting-up-log-collection) as in the main 
@@ -118,7 +118,7 @@ az cleanroom config add-datasource `
 az cleanroom datasource upload `
     --cleanroom-config $consumerConfig `
     --name consumer-input `
-    --dataset-folder ./scenarios/analytics/consumer-demo/consumer-input
+    --dataset-folder ./demos/analytics/consumer-demo/consumer-input
 ```
 
 # 9. Consumer: Application configuration and mount points

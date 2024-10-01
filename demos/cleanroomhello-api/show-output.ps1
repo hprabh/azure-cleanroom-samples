@@ -3,13 +3,13 @@ param(
 
     [string]$samplesRoot = "/home/samples",
     [string]$privateDir = "$samplesRoot/demo-resources.private",
-    [string]$scenarioRoot = "$samplesRoot/scenario",
+    [string]$demosRoot = "$samplesRoot/demos",
 
     [string]$datastoreConfig = "$privateDir/datastores.config",
     [string]$datastoreDir = "$privateDir/datastores",
-    [string]$scenario = "$(Split-Path $PSScriptRoot -Leaf)",
-    [string]$datasinkPath = "$scenarioRoot/$scenario/datasink/$persona"
+    [string]$demo = "$(Split-Path $PSScriptRoot -Leaf)",
+    [string]$datasinkPath = "$demosRoot/$demo/datasink/$persona"
 )
 
 Write-Host -ForegroundColor Yellow `
-    "No output available for persona '$persona' in scenario '$scenario'."
+    "No output available for persona '$persona' in demo '$demo'."

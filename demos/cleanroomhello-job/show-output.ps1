@@ -6,7 +6,7 @@ param(
 
     [string]$datastoreConfig = "$privateDir/datastores.config",
     [string]$datastoreDir = "$privateDir/datastores",
-    [string]$scenario = "$(Split-Path $PSScriptRoot -Leaf)",
+    [string]$demo = "$(Split-Path $PSScriptRoot -Leaf)",
     [string]$datasinkPath = "$PSScriptRoot/datasink/$persona"
 )
 
@@ -19,7 +19,7 @@ if (Test-Path -Path $datasinkPath)
         Write-Host -ForegroundColor Gray `
             "Enumerated datasink '$datasinkName' in '$datasinkPath'..."
 
-        $datastoreName = "$scenario-$persona-$dir".ToLower()
+        $datastoreName = "$demo-$persona-$dir".ToLower()
         $datastoreFolder = "$datastoreDir/$datastoreName"
         Write-Host -ForegroundColor Yellow `
             "Output from datastore '$datastoreName':"
@@ -33,5 +33,5 @@ if (Test-Path -Path $datasinkPath)
 else
 {
     Write-Host -ForegroundColor Yellow `
-        "No output available for persona '$persona' in scenario '$scenario'."
+        "No output available for persona '$persona' in demo '$demo'."
 }

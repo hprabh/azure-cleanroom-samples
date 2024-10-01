@@ -1,7 +1,7 @@
 param(
     [Parameter(Mandatory = $true)]
     [ValidateSet("cleanroomhello-job", "cleanroomhello-api", "analytics")]
-    [string]$scenario,
+    [string]$demo,
 
     [string]$persona = "$env:PERSONA",
     [string]$resourceGroup = "$env:RESOURCE_GROUP",
@@ -9,15 +9,15 @@ param(
     [string]$samplesRoot = "/home/samples",
     [string]$privateDir = "$samplesRoot/demo-resources.private",
     [string]$secretDir = "$samplesRoot/demo-resources.secret",
-    [string]$scenarioRoot = "$samplesRoot/scenario",
+    [string]$demosRoot = "$samplesRoot/demos",
     [string]$sa = "",
 
     [string]$environmentConfig = "$privateDir/$resourceGroup.generated.json",
     [string]$keyStore = "$secretDir/keys",
     [string]$datastoreConfig = "$privateDir/datastores.config",
     [string]$datastoreDir = "$privateDir/datastores",
-    [string]$datasourcePath = "$scenarioRoot/$scenario/datasource/$persona",
-    [string]$datasinkPath = "$scenarioRoot/$scenario/datasink/$persona"
+    [string]$datasourcePath = "$demosRoot/$demo/datasource/$persona",
+    [string]$datasinkPath = "$demosRoot/$demo/datasink/$persona"
 )
 
 #https://learn.microsoft.com/en-us/powershell/scripting/learn/experimental-features?view=powershell-7.4#psnativecommanderroractionpreference
@@ -31,14 +31,14 @@ if ($sa -eq "")
 }
 
 Write-Host -ForegroundColor Gray `
-    "Creating data stores for '$scenario' scenario in '$sa'..."
+    "Creating data stores for '$demo' demo in '$sa'..."
 
 if (Test-Path -Path $datasourcePath)
 {
     $dirs = Get-ChildItem -Path $datasourcePath -Directory -Name
     foreach ($dir in $dirs)
     {
-        $datastoreName = "$scenario-$persona-$dir".ToLower()
+        $datastoreName = "$demo-$persona-$dir".ToLower()
         Write-Host -ForegroundColor Gray `
             "Enumerated datasink '$datastoreName' in '$datasourcePath'..."
 
@@ -66,7 +66,7 @@ if (Test-Path -Path $datasourcePath)
 else
 {
     Write-Host -ForegroundColor Yellow `
-        "No datasource required for persona '$persona' in scenario '$scenario'."
+        "No datasource required for persona '$persona' in demo '$demo'."
 }
 
 
@@ -75,7 +75,7 @@ if (Test-Path -Path $datasinkPath)
     $dirs = Get-ChildItem -Path $datasinkPath -Directory -Name
     foreach ($dir in $dirs)
     {
-        $datastoreName = "$scenario-$persona-$dir".ToLower()
+        $datastoreName = "$demo-$persona-$dir".ToLower()
         Write-Host -ForegroundColor Gray `
             "Enumerated datasink '$datastoreName' in '$datasinkPath'..."
 
@@ -95,5 +95,5 @@ if (Test-Path -Path $datasinkPath)
 else
 {
     Write-Host -ForegroundColor Yellow `
-        "No datasink required for persona '$persona' in scenario '$scenario'."
+        "No datasink required for persona '$persona' in demo '$demo'."
 }

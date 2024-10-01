@@ -1,6 +1,7 @@
 # Multi-party collaboration <!-- omit from toc -->
 
-These samples demonstrate usage of an Azure **_Confidential Clean Room_** (**CCR**) for multi-party collaboration for the following scenarios:
+The demos in this repository demonstrate usage of an Azure **_Confidential Clean Room_** (**CCR**) for multi-party collaboration.
+
 - Confidential access of protected data. [Job] / [API]
 - Confidential execution of audited queries on protected datasets using a standalone DB engine residing within the CCR. [Analytics]
 - Confidential inference from sensitive data using a protected ML model. [Inference]
@@ -83,12 +84,12 @@ collab-common
   - [Trademarks](#trademarks)
 
 # Overview
-All the scenarios demonstrate collaborations where one or more of the following parties come together:
+All the demos demonstrate collaborations where one or more of the following parties come together:
   - **_Litware_**, end to end solution developer publishing applications that execute within the CCR.
   - **_Fabrikam_**, collaborator owning sensitive dataset(s) and protected AI model(s) that can be consumed by applications inside a CCR.
   - **_Contosso_**, collaborator owning sensitive dataset(s) that can be consumed by applications inside a CCR.
   
-The following parties are additionally involved in completing the end to end scenario:
+The following parties are additionally involved in completing the end to end demo:
   - **_Client_**, consumer invoking the CCR endpoint to gather insights, without any access to the protected data itself.
   - **_Operator_**, clean room provider hosting the CCR infrastructure.
 
@@ -382,7 +383,7 @@ Once the collaborators have been added, they now need to activate their membersh
 With the above steps the consortium creation that drives the creation and execution of the clean room is complete. We now proceed to preparing the datasets and making them available in the clean room.
 
 > [!TIP]
-> The same consortium can be used/reused for executing any/all the sample scenarios. There is no need to repeat these steps unless the collaborators have changed. 
+> The same consortium can be used/reused for executing any/all the sample demos. There is no need to repeat these steps unless the collaborators have changed. 
 
 # Publishing data
 Sensitive data that any of the parties want to bring into the collaboration needs to be encrypted in a manner that ensures the key to decrypt this data will only be released to the clean room environment. 
@@ -414,14 +415,14 @@ sequenceDiagram
 The following command initializes datastores and uploads encrypted datasets required for executing the samples:
 
 ```powershell
-$scenario = "<scenario>" # ("cleanroomhello-job", "cleanroomhello-api", "analytics")
+$demo = "<demo>" # ("cleanroomhello-job", "cleanroomhello-api", "analytics")
 
 # Publish data. 
 #
 # Data publisher persona is picked from $env:PERSONA by default, use -persona to override.
 # Storage account is picked from ./demo-resources.private/$env:RESOURCE_GROUP.generated.json by default, use -sa to override.
 #
-./scripts/data/publish-data.ps1 -scenario $scenario
+./scripts/data/publish-data.ps1 -demo $demo
 ```
 
 # Authoring collaboration contract
@@ -430,12 +431,12 @@ Every party participating in the collaboration authors their respective contract
 
 ## Initializing a contract fragment (litware, fabrikam, contosso)
 
-The following command initializes the contract fragement for a given scenario:
+The following command initializes the contract fragement for a given demo:
 
 ```powershell
-$scenario = "<scenario>" # ("cleanroomhello-job", "cleanroomhello-api", "analytics")
+$demo = "<demo>" # ("cleanroomhello-job", "cleanroomhello-api", "analytics")
 
-./scripts/specification/initialize-specification.ps1 -scenario $scenario
+./scripts/specification/initialize-specification.ps1 -demo $demo
 ```
 
 <!-- TODO: Update below with actual output. -->
@@ -457,7 +458,7 @@ The following command adds details about the datastores to be accessed by the cl
 
 
 ```powershell
-./scripts/specification/add-specification-data.ps1 -scenario $scenario
+./scripts/specification/add-specification-data.ps1 -demo $demo
 ```
 
 
@@ -473,7 +474,7 @@ The following command adds details about the (containerized) application to be e
 
 
 ```powershell
-pwsh ./scenario/$scenario/add-specification-application.ps1
+pwsh ./demos/$demo/add-specification-application.ps1
 ```
 
 
@@ -495,7 +496,7 @@ The application container is configured to access protected data through the cor
 The following command adds details about the storage account endpoint details for collecting the application logs:
 
 ```powershell
-./scripts/specification/add-specification-telemetry.ps1 -scenario $scenario
+./scripts/specification/add-specification-telemetry.ps1 -demo $demo
 ```
 
 The actual download of the logs happens later on in the flow.
@@ -562,7 +563,7 @@ The _operator_ merges all the contract fragments shared by the collaborators and
 
 
 ```powershell
-./scripts/contract/register-contract.ps1 -scenario $scenario
+./scripts/contract/register-contract.ps1 -demo $demo
 ```
 
 
@@ -575,7 +576,7 @@ The collaborating parties can now query the governance service to get the propos
 
 
 ```powershell
-./scripts/contract/confirm-contract.ps1 -contractId "collab-$scenario"
+./scripts/contract/confirm-contract.ps1 -contractId "collab-$demo"
 ```
 
 
@@ -591,7 +592,7 @@ $env:AZCLI_CLEANROOM_SIDECARS_VERSIONS_DOCUMENT_URL = "localhost:5001/sidecar-di
 -->
 
 ```powershell
-./scripts/contract/register-deployment-artefacts.ps1 -scenario $scenario
+./scripts/contract/register-deployment-artefacts.ps1 -demo $demo
 ```
 
 > [!TIP]
@@ -614,7 +615,7 @@ Once the *ARM template* and *CCE policy* proposals are available in the consorti
 
 
 ```powershell
-./scripts/contract/confirm-deployment-artefacts.ps1 -contractId "collab-$scenario"
+./scripts/contract/confirm-deployment-artefacts.ps1 -contractId "collab-$demo"
 ```
 
 
@@ -627,7 +628,7 @@ The managed identities created earlier as part of [authoring the contract](#auth
 
 
 ```powershell
-./scripts/contract/grant-deployment-access.ps1 -scenario $scenario
+./scripts/contract/grant-deployment-access.ps1 -demo $demo
 ```
 
 The flow below is executed by all the collaborators in their respective Azure tenants.
@@ -663,7 +664,7 @@ Once the ARM template and CCE policy proposals have been accepted and access has
 
 
 ```powershell
-./scripts/cleanroom/deploy-cleanroom.ps1 -contractId "collab-$scenario"
+./scripts/cleanroom/deploy-cleanroom.ps1 -contractId "collab-$demo"
 ```
 
 
@@ -671,7 +672,7 @@ Run the following script to wait for the cleanroom to exit.
 
 
 ```powershell
-./scripts/cleanroom/watch-cleanroom.ps1 -contractId "collab-$scenario"
+./scripts/cleanroom/watch-cleanroom.ps1 -contractId "collab-$demo"
 ```
 
 
@@ -681,7 +682,7 @@ As part of the execution, the cleanroom application may write out any computed o
 
 
 ```powershell
-./scripts/data/copy-data.ps1 -scenario $scenario
+./scripts/data/copy-data.ps1 -demo $demo
 ```
 
 
@@ -689,7 +690,7 @@ This command downloads all the files from the storage container into a local fol
 
 
 ```powershell
-pwsh ./scenario/$scenario/show-output.ps1
+pwsh ./demos/$demo/show-output.ps1
 ```
 
 
@@ -699,7 +700,7 @@ The application developer (_litware_) can download the infrastructure telemetry 
 
 
 ```powershell
-./scripts/data/copy-telemetry.ps1 -scenario $scenario
+./scripts/data/copy-telemetry.ps1 -demo $demo
 ```
 
 

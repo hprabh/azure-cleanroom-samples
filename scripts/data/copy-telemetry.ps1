@@ -1,7 +1,7 @@
 param(
     [Parameter(Mandatory = $true)]
     [ValidateSet("cleanroomhello-job", "cleanroomhello-api", "analytics")]
-    [string]$scenario,
+    [string]$demo,
 
     [string]$persona = "$env:PERSONA",
     [string]$resourceGroup = "$env:RESOURCE_GROUP",
@@ -11,7 +11,7 @@ param(
     [string]$secretDir = "$samplesRoot/demo-resources.secret",
 
     [string]$datastoreDir = "$privateDir/datastores",
-    [string]$contractConfig = "$privateDir/$resourceGroup-$scenario.generated.json",
+    [string]$contractConfig = "$privateDir/$resourceGroup-$demo.generated.json",
     [string]$datastoreConfig = "$privateDir/datastores.config"
 )
 
@@ -43,6 +43,6 @@ if ($telemetryConfigured)
 else
 {
     Write-Host  -ForegroundColor Yellow
-        "No telemetry download available for persona '$persona' in scenario '$scenario'."
+        "No telemetry download available for persona '$persona' in demo '$demo'."
 }
 

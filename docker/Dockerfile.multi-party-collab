@@ -50,8 +50,8 @@ ONBUILD RUN az extension add --source /home/scratch/${EXTENSION_FILENAME}.whl -y
 
 FROM install-extension-${EXTENSION_SOURCE}
 # Copy samples payload.
-WORKDIR /home/samples/scenario
-COPY ./scenario .
+WORKDIR /home/samples/demos
+COPY ./demos .
 WORKDIR /home/samples/scripts
 COPY ./scripts .
 # Done!

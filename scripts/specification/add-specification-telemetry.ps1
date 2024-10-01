@@ -1,7 +1,7 @@
 param(
     [Parameter(Mandatory = $true)]
     [ValidateSet("cleanroomhello-job", "cleanroomhello-api", "analytics")]
-    [string]$scenario,
+    [string]$demo,
 
     [string]$persona = "$env:PERSONA",
     [string]$resourceGroup = "$env:RESOURCE_GROUP",
@@ -10,7 +10,7 @@ param(
     [string]$privateDir = "$samplesRoot/demo-resources.private",
     [string]$secretDir = "$samplesRoot/demo-resources.secret",
 
-    [string]$contractConfig = "$privateDir/$resourceGroup-$scenario.generated.json",
+    [string]$contractConfig = "$privateDir/$resourceGroup-$demo.generated.json",
     [string]$environmentConfig = "$privateDir/$resourceGroup.generated.json",
     [string]$datastoreConfig = "$privateDir/datastores.config",
     [string]$keysDir = "$secretDir/keys"
@@ -24,7 +24,7 @@ $contractConfigResult = Get-Content $contractConfig | ConvertFrom-Json
 $environmentConfigResult = Get-Content $environmentConfig | ConvertFrom-Json
 
 Write-Host -ForegroundColor Gray `
-    "Adding telemetry details for '$persona' in the '$scenario' scenario to " `
+    "Adding telemetry details for '$persona' in the '$demo' demo to " `
     "'$($configResult.contractFragment)'..."
 
 # $result below refers to the output of the prepare-resources.ps1 that was run earlier.

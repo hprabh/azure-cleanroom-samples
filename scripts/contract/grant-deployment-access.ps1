@@ -1,7 +1,7 @@
 param(
     [Parameter(Mandatory = $true)]
     [ValidateSet("cleanroomhello-job", "cleanroomhello-api", "analytics")]
-    [string]$scenario,
+    [string]$demo,
 
     [Parameter(Mandatory = $true)]
     [string]$contractId,
@@ -20,7 +20,7 @@ param(
     [string]$keyStore = "$secretDir/keys",
     [string]$datastoreConfig = "$privateDir/datastores.config",
     [string]$environmentConfig = "$privateDir/$resourceGroup.generated.json",
-    [string]$contractConfig = "$privateDir/$resourceGroup-$scenario.generated.json"
+    [string]$contractConfig = "$privateDir/$resourceGroup-$demo.generated.json"
 )
 
 #https://learn.microsoft.com/en-us/powershell/scripting/learn/experimental-features?view=powershell-7.4#psnativecommanderroractionpreference
@@ -28,7 +28,7 @@ $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
 Write-Host -ForegroundColor Gray `
-    "Granting access to resources required for '$scenario' scenario to deployments implementing " `
+    "Granting access to resources required for '$demo' demo to deployments implementing " `
     "contract '$contractId'..." 
 
 Import-Module $PSScriptRoot/../azure-helpers/azure-helpers.psm1 -Force -DisableNameChecking
@@ -239,5 +239,5 @@ Write-Host -ForegroundColor Gray `
 Start-Sleep -Seconds $sleepTime
 
 Write-Host -ForegroundColor Yellow `
-    "Granted access to resources required for '$scenario' scenario to deployments implementing " `
+    "Granted access to resources required for '$demo' demo to deployments implementing " `
     "contract '$contractId' through federation on managed identity '$($managedIdentity.name)'." 

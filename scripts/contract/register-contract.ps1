@@ -1,7 +1,7 @@
 param(
     [Parameter(Mandatory = $true)]
     [ValidateSet("cleanroomhello-job", "cleanroomhello-api", "analytics")]
-    [string]$scenario,
+    [string]$demo,
 
     [string[]]$collaborators = ('litware', 'fabrikam', 'contosso'),
 
@@ -10,7 +10,7 @@ param(
     [string]$samplesRoot = "/home/samples",
     [string]$publicDir = "$samplesRoot/demo-resources.public",
 
-    [string]$contractId = "collab-$scenario-$((New-Guid).ToString().Substring(0, 8))",
+    [string]$contractId = "collab-$demo-$((New-Guid).ToString().Substring(0, 8))",
     [string]$cleanroomConfig = "$publicDir/$contractId-cleanroom.config"
 )
 
@@ -28,7 +28,7 @@ az cleanroom config init `
 $azArgs = "cleanroom config view --cleanroom-config $cleanroomConfig --output-file $cleanroomConfig --configs "
 foreach ($collaboratorName in $collaborators)
 {
-    $fragment = "./$publicDir/$collaboratorName-$scenario.config"
+    $fragment = "./$publicDir/$collaboratorName-$demo.config"
     Write-Host -ForegroundColor Gray `
         "Adding fragment for '$collaboratorName' ('$fragment')..."
     $azArgs = $azArgs + "$fragment "
