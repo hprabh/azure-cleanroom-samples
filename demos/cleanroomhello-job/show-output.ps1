@@ -16,17 +16,17 @@ if (Test-Path -Path $datasinkPath)
     foreach ($dir in $dirs)
     {
         $datasinkName = "$persona-$dir".ToLower()
-        Write-Host -ForegroundColor Gray `
+        Write-Host -ForegroundColor DarkGray `
             "Enumerated datasink '$datasinkName' in '$datasinkPath'..."
 
         $datastoreName = "$demo-$persona-$dir".ToLower()
         $datastoreFolder = "$datastoreDir/$datastoreName"
         Write-Host -ForegroundColor Yellow `
             "Output from datastore '$datastoreName':"
-        Write-Host -ForegroundColor Gray `
+        Write-Host -ForegroundColor DarkGray `
             "-----BEGIN OUTPUT-----"
         gzip -c -d $datastoreFolder/*.gz
-        Write-Host -ForegroundColor Gray `
+        Write-Host -ForegroundColor DarkGray `
             "-----END OUTPUT-----"
     }
 }

@@ -7,58 +7,104 @@ param(
     [string]$resourceGroupLocation = "westus",
 
     [string]$imageName = "azure-cleanroom-samples",
-    [string]$dockerFileDir = "./docker"
+    [string]$dockerFileDir = "./docker",
+    [switch]$overwrite
 )
 
 #https://learn.microsoft.com/en-us/powershell/scripting/learn/experimental-features?view=powershell-7.4#psnativecommanderroractionpreference
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
-# TODO (phanic) Cut across to prebuilt docker image once we setup the repository.
-$localImage = (docker image ls $imageName --format 'json') | ConvertFrom-Json
-if ($null -eq $localImage.ID)
-{ 
-    Write-Host -ForegroundColor Yellow `
-        "Building container image '$imageName' for starting the samples environment..." 
+function Get-Confirmation {
+    param (
+        [string]$Message = "Are you sure?",
+        [string]$YesLabel = "Yes",
+        [string]$NoLabel = "No"
+    )
 
-    $dockerArgs = "image build -t $imageName -f $dockerFileDir/Dockerfile.multi-party-collab `".`""
+    do {
+        $choice = Read-Host `
+            "$Message ($YesLabel/$NoLabel)"
+        $choice = $choice.ToLower()
+        switch ($choice) {
+            $YesLabel.ToLower() {
+                $response = $choice
+                break
+            }
+            $NoLabel.ToLower() {
+                $response = $choice
+                break
+            }
+            default {
+                Write-Host "Invalid input. Please enter '$YesLabel' or '$NoLabel'."
+            }
+        }
+    } while ($response -ne $YesLabel.ToLower() -and $response -ne $NoLabel.ToLower())
 
-    $customCliExtensionPath = "$dockerFileDir/cleanroom-0.0.3-py2.py3-none-any.whl"
-    if (Test-Path -Path $customCliExtensionPath)
-    {
-        Write-Host -ForegroundColor Yellow `
-            "Using custom az cli extensions from '$customCliExtensionPath'..."
-        $dockerArgs += " --build-arg EXTENSION_SOURCE=local"
-    }
+    return ($response -eq $YesLabel.ToLower())
+}
 
-    Start-Process docker $dockerArgs -Wait
+$containerName = "$persona-shell"
+$container = (docker container ls -a --filter "name=^$containerName$" --format 'json') | ConvertFrom-Json
+if ($null -eq $container)
+{
+    $createContainer = $true
 }
 else
 {
     Write-Host -ForegroundColor Yellow `
-        "Using local container image '$imageName' for starting the samples environment..."
+        "Samples environment for '$persona' already exists - $($container.Names) ($($container.ID))."
+    $overwrite = $overwrite -or
+        (Get-Confirmation -Message "Overwrite container '$containerName'?" -YesLabel "Y" -NoLabel "N")
+    if ($overwrite)
+    {
+        Write-Host -ForegroundColor Yellow `
+            "Deleting container '$containerName'..."
+        docker container rm -f $containerName
+        $createContainer = $true
+    }
+    else
+    {
+        $createContainer = $false
+    }
 }
 
-if ($resourceGroup -eq "")
+if ($createContainer)
 {
-    $resourceGroup = "$persona-$((New-Guid).ToString().Substring(0, 8))"
+    Write-Host -ForegroundColor Yellow `
+        "Creating samples environment '$containerName' using image '$imageName'..." 
+
+    # TODO (phanic) Cut across to prebuilt docker image once we setup the repository.
+    $dockerArgs = "image build -t $imageName -f $dockerFileDir/Dockerfile.multi-party-collab `".`""
+    $customCliExtensions = @(Get-Item -Path "./docker/*.whl")
+    if (0 -ne $customCliExtensions.Count)
+    {
+        Write-Host -ForegroundColor Yellow `
+            "Using custom az cli extensions: $customCliExtensions..."
+        $dockerArgs += " --build-arg EXTENSION_SOURCE=local"
+    }
+    Start-Process docker $dockerArgs -Wait
+
+    if ($resourceGroup -eq "")
+    {
+        $resourceGroup = "$persona-$((New-Guid).ToString().Substring(0, 8))"
+    }
+    docker create `
+        --env PERSONA=$persona `
+        --env RESOURCE_GROUP=$resourceGroup `
+        --env RESOURCE_GROUP_LOCATION=$resourceGroupLocation `
+        -v "//var/run/docker.sock:/var/run/docker.sock" `
+        -v "$pwd/demo-resources/resources.public:/home/samples/demo-resources.public" `
+        -v "$pwd/demo-resources/resources.$persona.private:/home/samples/demo-resources.private" `
+        -v "$pwd/demo-resources/resources.$persona.secret:/home/samples/demo-resources.secret" `
+        --network host `
+        --name $containerName `
+        -it $imageName
+    Write-Host -ForegroundColor Yellow `
+        "Created container '$containerName' to start samples environment for " `
+        "'$persona'. Environment will be using resource group '$resourceGroup'."
 }
 
-docker create `
-    --env PERSONA=$persona `
-    --env RESOURCE_GROUP=$resourceGroup `
-    --env RESOURCE_GROUP_LOCATION=$resourceGroupLocation `
-    -v "//var/run/docker.sock:/var/run/docker.sock" `
-    -v "$pwd/demo-resources/resources.public:/home/samples/demo-resources.public" `
-    -v "$pwd/demo-resources/resources.$persona.private:/home/samples/demo-resources.private" `
-    -v "$pwd/demo-resources/resources.$persona.secret:/home/samples/demo-resources.secret" `
-    --network host `
-    --name "$persona-shell" `
-    -it $imageName
-Write-Host -ForegroundColor Yellow `
-    "Created container image '$persona-shell' to start samples environment for " `
-    "'$persona'. Environment will be using resource group '$resourceGroup'."
-
-Write-Host -ForegroundColor Gray `
+Write-Host -ForegroundColor DarkGray `
     "Starting samples environment..."
-docker container start -a -i "$persona-shell"
+docker container start -a -i $containerName

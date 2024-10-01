@@ -16,7 +16,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
-Write-Host -ForegroundColor Gray `
+Write-Host -ForegroundColor DarkGray `
     "Deploying clean room for contract '$contractId'..." 
 
 # Get the agreed upon ARM template for deployment.

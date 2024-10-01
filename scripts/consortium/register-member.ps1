@@ -13,7 +13,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
-Write-Host -ForegroundColor Gray `
+Write-Host -ForegroundColor DarkGray `
     "Adding '$collaborators' to the consortium..." 
 
 foreach ($collaboratorName in $collaborators)

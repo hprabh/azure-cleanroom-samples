@@ -16,7 +16,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
-Write-Host -ForegroundColor Gray `
+Write-Host -ForegroundColor DarkGray `
     "Generating deployment artefacts for contract '$contractId' in '$artefactsDir'..." 
 
 mkdir $artefactsDir
@@ -26,7 +26,7 @@ az cleanroom governance deployment generate `
     --security-policy-creation-option $securityPolicy `
     --output-dir $artefactsDir
 
-Write-Host -ForegroundColor Gray `
+Write-Host -ForegroundColor DarkGray `
     "Proposing deployment artefacts for contract '$contractId' to the consortium..." 
 
 az cleanroom governance deployment template propose `

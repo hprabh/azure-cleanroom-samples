@@ -9,7 +9,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
-Write-Host -ForegroundColor Gray `
+Write-Host -ForegroundColor DarkGray `
     "Accepting contract '$contractId'..." 
 
 $contract = (az cleanroom governance contract show `

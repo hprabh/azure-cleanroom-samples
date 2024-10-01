@@ -27,7 +27,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
-Write-Host -ForegroundColor Gray `
+Write-Host -ForegroundColor DarkGray `
     "Granting access to resources required for '$demo' demo to deployments implementing " `
     "contract '$contractId'..." 
 
@@ -53,7 +53,7 @@ $managedIdentity = $contractConfigResult.mi
 
 # Cleanroom needs both read/write permissions on storage account, hence assigning Storage Blob Data Contributor.
 $role = "Storage Blob Data Contributor"
-Write-Host -ForegroundColor Gray `
+Write-Host -ForegroundColor DarkGray `
     "Assigning permission for '$role' to '$($managedIdentity.name)' on " `
     "storage account '$($environmentConfigResult.sa.name)'"
 az role assignment create `
@@ -78,7 +78,7 @@ if ($kekVault.type -eq "Microsoft.KeyVault/managedHSMs") {
             "'$($managedIdentity.name)' on mHSM '$($kekVault.name)'."
     }
     else {
-        Write-Host -ForegroundColor Gray `
+        Write-Host -ForegroundColor DarkGray `
             "Assigning permissions for '$role' to '$($managedIdentity.name)' on " `
             "mHSM '$($kekVault.name)'"
         az keyvault role assignment create `
@@ -103,7 +103,7 @@ elseif ($kekVault.type -eq "Microsoft.KeyVault/vaults") {
             "'$($managedIdentity.name)' on key vault '$($kekVault.name)'."
     }
     else {
-        Write-Host -ForegroundColor Gray `
+        Write-Host -ForegroundColor DarkGray `
             "Assigning permissions for '$role' to '$($managedIdentity.name)' on " `
             "key vault '$($kekVault.name)'"
         az role assignment create `
@@ -118,7 +118,7 @@ elseif ($kekVault.type -eq "Microsoft.KeyVault/vaults") {
 # DEK vault access.
 $dekVault = $environmentConfigResult.dek.kv
 $role = "Key Vault Secrets User"
-Write-Host -ForegroundColor Gray `
+Write-Host -ForegroundColor DarkGray `
     "Assigning permission for '$role' to '$($managedIdentity.name)' on " `
     "storage account '$($dekVault.name)'"
 az role assignment create `
@@ -142,7 +142,7 @@ if ($null -ne $tenantData -and $tenantData.tenantId -eq $tenantId) {
 }
 else {
     $oidcsa = $environmentConfigResult.oidcsa.name
-    Write-Host -ForegroundColor Gray `
+    Write-Host -ForegroundColor DarkGray `
         "Setting up OIDC issuer for tenant '$tenantId' using storage account '$oidcsa'..."
 
     az storage account update --allow-blob-public-access true `
@@ -151,11 +151,11 @@ else {
         "Enabled public blob access for '$oidcsa'."
 
     $sleepTime = 30
-    Write-Host -ForegroundColor Gray `
+    Write-Host -ForegroundColor DarkGray `
         "Waiting for $sleepTime seconds for public blob access to be enabled..."
     Start-Sleep -Seconds $sleepTime
 
-    Write-Host -ForegroundColor Gray `
+    Write-Host -ForegroundColor DarkGray `
         "Creating public access blob container '$oidcContainerName' in '$oidcsa'..."
     az storage container create `
         --name $oidcContainerName `
@@ -166,7 +166,7 @@ else {
     Write-Host -ForegroundColor Yellow `
         "Created public access blob container '$oidcContainerName' in '$oidcsa'."
 
-    Write-Host -ForegroundColor Gray `
+    Write-Host -ForegroundColor DarkGray `
         "Uploading openid-configuration to container '$oidcContainerName' in '$oidcsa'..."
     @"
 {
@@ -192,7 +192,7 @@ else {
         --auth-mode login
     CheckLastExitCode
 
-    Write-Host -ForegroundColor Gray `
+    Write-Host -ForegroundColor DarkGray `
         "Uploading jwks to container '$oidcContainerName' in '$oidcsa'..."
     $url = "$ccfEndpoint/app/oidc/keys"
     curl -s -k $url | jq | Out-File $privateDir/jwks.json
@@ -205,7 +205,7 @@ else {
         --auth-mode login
     CheckLastExitCode
 
-    Write-Host -ForegroundColor Gray `
+    Write-Host -ForegroundColor DarkGray `
         "Setting OIDC issuer for tenant '$tenantId'..."
     az cleanroom governance oidc-issuer set-issuer-url `
         --governance-client $cgsClient `
@@ -222,7 +222,7 @@ else {
 #
 # Setup federated credential on managed identity.
 #
-Write-Host -ForegroundColor Gray `
+Write-Host -ForegroundColor DarkGray `
     "Setting up federation on managed identity '$($managedIdentity.name)' for " `
     "issuer '$issuerUrl' and subject '$contractId'..."
 az identity federated-credential create `
@@ -234,7 +234,7 @@ az identity federated-credential create `
 
 # See Note at https://learn.microsoft.com/en-us/azure/aks/workload-identity-deploy-cluster#create-the-federated-identity-credential
 $sleepTime = 30
-Write-Host -ForegroundColor Gray `
+Write-Host -ForegroundColor DarkGray `
     "Waiting for $sleepTime seconds for federated identity credential to propagate..."
 Start-Sleep -Seconds $sleepTime
 

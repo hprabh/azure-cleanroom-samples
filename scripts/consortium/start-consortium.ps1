@@ -15,7 +15,7 @@ $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
 $ccfName = $persona + "-ccf"
-Write-Host -ForegroundColor Gray `
+Write-Host -ForegroundColor DarkGray `
     "Creating consortium '$ccfName' in resource group '$resourceGroup'..."
 
 $memberCert = $secretDir + "/"+ $persona +"_cert.pem" # Created previously via the keygenerator-sh command.

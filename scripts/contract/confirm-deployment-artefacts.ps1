@@ -9,7 +9,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
-Write-Host -ForegroundColor Gray `
+Write-Host -ForegroundColor DarkGray `
     "Accepting deployment artefacts for '$contractId'..." 
 
 # Vote on the proposed deployment template.
@@ -18,7 +18,7 @@ $proposalId = az cleanroom governance deployment template show `
     --governance-client $cgsClient `
     --query "proposalIds[0]" `
     --output tsv
-Write-Host -ForegroundColor Gray `
+Write-Host -ForegroundColor DarkGray `
     "Accepting deployment template proposal '$proposalId'..."
 az cleanroom governance proposal show-actions `
     --proposal-id $proposalId `
@@ -38,7 +38,7 @@ $proposalId = az cleanroom governance deployment policy show `
     --governance-client $cgsClient `
     --query "proposalIds[0]" `
     --output tsv
-Write-Host -ForegroundColor Gray `
+Write-Host -ForegroundColor DarkGray `
     "Accepting deployment policy proposal '$proposalId'..."
 az cleanroom governance proposal show-actions `
     --proposal-id $proposalId `
@@ -59,7 +59,7 @@ $proposalId = az cleanroom governance contract runtime-option get `
     --governance-client $cgsClient `
     --query "proposalIds[0]" `
     --output tsv
-Write-Host -ForegroundColor Gray `
+Write-Host -ForegroundColor DarkGray `
     "Accepting enable logging proposal '$proposalId'..."
 az cleanroom governance proposal vote `
     --proposal-id $proposalId `
@@ -75,7 +75,7 @@ $proposalId = az cleanroom governance contract runtime-option get `
     --governance-client $cgsClient `
     --query "proposalIds[0]" `
     --output tsv
-Write-Host -ForegroundColor Gray `
+Write-Host -ForegroundColor DarkGray `
     "Accepting enable telemetry proposal '$proposalId'..."
 az cleanroom governance proposal vote `
     --proposal-id $proposalId `

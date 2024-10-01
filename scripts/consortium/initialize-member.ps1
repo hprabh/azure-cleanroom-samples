@@ -22,7 +22,7 @@ if ((Test-Path -Path "$publicDir/$memberCert") -or
 }
 
 # Generate member identity and encryption public-private key pair.
-Write-Host -ForegroundColor Gray `
+Write-Host -ForegroundColor DarkGray `
     "Generating identity and encryption key pairs for '$persona' in '$secretDir'..." 
 az cleanroom governance member keygenerator-sh | bash -s -- --gen-enc-key --name $persona --out $secretDir
 

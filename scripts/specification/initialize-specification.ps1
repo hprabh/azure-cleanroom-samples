@@ -23,7 +23,7 @@ $PSNativeCommandUseErrorActionPreference = $true
 
 $initResult = Get-Content $environmentConfig | ConvertFrom-Json
 
-Write-Host -ForegroundColor Gray `
+Write-Host -ForegroundColor DarkGray `
     "Initializing cleanroom specification '$contractFragment'..." 
 az cleanroom config init `
     --cleanroom-config $contractFragment
@@ -38,7 +38,7 @@ if ($managedIdentityName -eq "")
     $managedIdentityName = "${uniqueString}-mi-$demo"
 }
 
-Write-Host -ForegroundColor Gray `
+Write-Host -ForegroundColor DarkGray `
     "Creating managed identity '$managedIdentityName' in resource group '$resourceGroup'..."
 $mi = (az identity create `
     --name $managedIdentityName `

@@ -24,7 +24,7 @@ $PSNativeCommandUseErrorActionPreference = $true
 $contractConfigResult = Get-Content $contractConfig | ConvertFrom-Json
 $environmentConfigResult = Get-Content $environmentConfig | ConvertFrom-Json
 
-Write-Host -ForegroundColor Gray `
+Write-Host -ForegroundColor DarkGray `
     "Adding datasources and datasinks for '$persona' in the '$demo' demo to " `
     "'$($contractConfigResult.contractFragment)'..."
 

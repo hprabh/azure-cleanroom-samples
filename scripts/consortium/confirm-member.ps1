@@ -13,7 +13,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
-Write-Host -ForegroundColor Gray `
+Write-Host -ForegroundColor DarkGray `
     "Joining consortium '$ccfEndpoint'..."
 
 # Deploy client-side containers to interact with the governance service as the new member.

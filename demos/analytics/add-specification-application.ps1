@@ -21,7 +21,7 @@ if (-not (("litware") -contains $persona))
 }
 
 $configResult = Get-Content $contractConfig | ConvertFrom-Json
-Write-Host -ForegroundColor Gray `
+Write-Host -ForegroundColor DarkGray `
     "Adding application details for '$persona' in the '$demo' demo to " `
     "'$($configResult.contractFragment)'..."
 

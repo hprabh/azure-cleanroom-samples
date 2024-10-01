@@ -30,7 +30,7 @@ if ($sa -eq "")
     $sa = $initResult.sa.id
 }
 
-Write-Host -ForegroundColor Gray `
+Write-Host -ForegroundColor DarkGray `
     "Creating data stores for '$demo' demo in '$sa'..."
 
 if (Test-Path -Path $datasourcePath)
@@ -39,7 +39,7 @@ if (Test-Path -Path $datasourcePath)
     foreach ($dir in $dirs)
     {
         $datastoreName = "$demo-$persona-$dir".ToLower()
-        Write-Host -ForegroundColor Gray `
+        Write-Host -ForegroundColor DarkGray `
             "Enumerated datasink '$datastoreName' in '$datasourcePath'..."
 
         az cleanroom datastore add `
@@ -76,7 +76,7 @@ if (Test-Path -Path $datasinkPath)
     foreach ($dir in $dirs)
     {
         $datastoreName = "$demo-$persona-$dir".ToLower()
-        Write-Host -ForegroundColor Gray `
+        Write-Host -ForegroundColor DarkGray `
             "Enumerated datasink '$datastoreName' in '$datasinkPath'..."
 
         az cleanroom datastore add `
