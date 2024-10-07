@@ -15,22 +15,33 @@ $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
 $ccfName = $persona + "-ccf"
-Write-Host -ForegroundColor DarkGray `
+$ccf = (az confidentialledger managedccfs list `
+    --resource-group $resourceGroup `
+    --query "[?name=='$ccfName']") | ConvertFrom-Json
+if ($null -eq $ccf)
+{
+    Write-Host -ForegroundColor DarkGray `
     "Creating consortium '$ccfName' in resource group '$resourceGroup'..."
 
-$memberCert = $secretDir + "/"+ $persona +"_cert.pem" # Created previously via the keygenerator-sh command.
-az confidentialledger managedccfs create `
-    --name $ccfName `
-    --resource-group $resourceGroup `
-    --location "southcentralus" `
-    --members "[{certificate:'$memberCert',identifier:'$persona'}]"
-$ccfEndpoint = (az confidentialledger managedccfs show `
-    --resource-group $resourceGroup `
-    --name $ccfName `
-    --query "properties.appUri" `
-    --output tsv)
-Write-Host -ForegroundColor Yellow `
-    "Created consortium '$ccfName' ('$ccfEndpoint')."
+    $memberCert = $secretDir + "/"+ $persona + "_cert.pem" # Created previously via the keygenerator-sh command.
+    az confidentialledger managedccfs create `
+        --name $ccfName `
+        --resource-group $resourceGroup `
+        --location "southcentralus" `
+        --members "[{certificate:'$memberCert',identifier:'$persona'}]"
+    $ccfEndpoint = (az confidentialledger managedccfs show `
+        --resource-group $resourceGroup `
+        --name $ccfName `
+        --query "properties.appUri" `
+        --output tsv)
+    Write-Host -ForegroundColor Yellow `
+        "Created consortium '$ccfName' ('$ccfEndpoint')."
+}
+else {
+    $ccfEndpoint = $ccf.properties.appUri
+    Write-Host -ForegroundColor Yellow `
+        "Connecting to consortium '$ccfName' ('$ccfEndpoint')."
+}
 
 # Deploy client-side containers to interact with the governance service as the first member.
 az cleanroom governance client deploy `

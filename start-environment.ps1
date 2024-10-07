@@ -52,6 +52,7 @@ if ($null -eq $container)
 }
 else
 {
+    # TODO (phanic): Scrub all Write-Host to have right colours and background.
     Write-Host -ForegroundColor Yellow `
         "Samples environment for '$persona' already exists - $($container.Names) ($($container.ID))."
     $overwrite = $overwrite -or

@@ -28,7 +28,7 @@ az cleanroom config init `
 $azArgs = "cleanroom config view --cleanroom-config $cleanroomConfig --output-file $cleanroomConfig --configs "
 foreach ($collaboratorName in $collaborators)
 {
-    $fragment = "./$publicDir/$collaboratorName-$demo.config"
+    $fragment = "$publicDir/$collaboratorName-$demo.config"
     Write-Host -ForegroundColor DarkGray `
         "Adding fragment for '$collaboratorName' ('$fragment')..."
     $azArgs = $azArgs + "$fragment "

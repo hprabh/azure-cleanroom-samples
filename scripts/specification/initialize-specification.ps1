@@ -21,6 +21,8 @@ param(
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
+Import-Module $PSScriptRoot/../azure-helpers/azure-helpers.psm1 -Force -DisableNameChecking
+
 $initResult = Get-Content $environmentConfig | ConvertFrom-Json
 
 Write-Host -ForegroundColor DarkGray `

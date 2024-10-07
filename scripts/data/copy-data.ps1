@@ -19,13 +19,15 @@ if (Test-Path -Path $datasinkPath)
     foreach ($dir in $dirs)
     {
         $datastoreName = "$demo-$persona-$dir".ToLower()
+
+        # TODO (phanic): Understand why this is being copied into a nested folder.
         az cleanroom datastore download `
             --name $datastoreName `
             --config $datastoreConfig `
             --dst $datastoreDir
         $dataDir = "$datastoreDir/$datastoreName"
         Write-Host -ForegroundColor Yellow `
-            "Downloaded data for datasink '$($persona-$dir.ToLower())' ($datastoreName) " `
+            "Downloaded data for datasink '$persona-$dir' ($datastoreName) " `
             "to '$dataDir'."
     }
 }

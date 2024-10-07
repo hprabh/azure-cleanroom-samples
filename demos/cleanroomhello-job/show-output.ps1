@@ -20,7 +20,8 @@ if (Test-Path -Path $datasinkPath)
             "Enumerated datasink '$datasinkName' in '$datasinkPath'..."
 
         $datastoreName = "$demo-$persona-$dir".ToLower()
-        $datastoreFolder = "$datastoreDir/$datastoreName"
+        # TODO (phanic): Understand why this is being copied into a nested folder.
+        $datastoreFolder = "$datastoreDir/$datastoreName/$datastoreName"
         Write-Host -ForegroundColor Yellow `
             "Output from datastore '$datastoreName':"
         Write-Host -ForegroundColor DarkGray `

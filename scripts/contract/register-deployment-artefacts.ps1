@@ -19,7 +19,7 @@ $PSNativeCommandUseErrorActionPreference = $true
 Write-Host -ForegroundColor DarkGray `
     "Generating deployment artefacts for contract '$contractId' in '$artefactsDir'..." 
 
-mkdir $artefactsDir
+mkdir -p $artefactsDir
 az cleanroom governance deployment generate `
     --contract-id $contractId `
     --governance-client $cgsClient `

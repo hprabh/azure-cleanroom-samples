@@ -107,7 +107,7 @@ elseif ($kekVault.type -eq "Microsoft.KeyVault/vaults") {
             "Assigning permissions for '$role' to '$($managedIdentity.name)' on " `
             "key vault '$($kekVault.name)'"
         az role assignment create `
-            --role "Key Vault Crypto Officer" `
+            --role $role `
             --scope $kekVault.id `
             --assignee-object-id $managedIdentity.principalId `
             --assignee-principal-type ServicePrincipal
@@ -122,7 +122,7 @@ Write-Host -ForegroundColor DarkGray `
     "Assigning permission for '$role' to '$($managedIdentity.name)' on " `
     "storage account '$($dekVault.name)'"
 az role assignment create `
-    --role  `
+    --role $role `
     --scope $dekVault.id `
     --assignee-object-id $managedIdentity.principalId `
     --assignee-principal-type ServicePrincipal

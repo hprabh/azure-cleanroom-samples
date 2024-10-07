@@ -56,3 +56,5 @@ WORKDIR /home/samples/scripts
 COPY ./scripts .
 # Done!
 WORKDIR /home/samples
+
+# TODO (phanic): Echo persona and resource group specified at the time of starting the container.

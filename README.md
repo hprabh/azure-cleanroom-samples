@@ -74,7 +74,7 @@ collab-common
   - [Configure resource access for clean room (litware, fabrikam, contosso)](#configure-resource-access-for-clean-room-litware-fabrikam-contosso)
 - [Using the clean room](#using-the-clean-room)
   - [Deploy clean room (operator)](#deploy-clean-room-operator)
-  - [Download encrypted output](#download-encrypted-output)
+  - [Download encrypted output (fabrikam, contosso)](#download-encrypted-output-fabrikam-contosso)
 - [Governing the cleanroom](#governing-the-cleanroom)
   - [Download and share logs (litware)](#download-and-share-logs-litware)
   - [Explore the downloaded logs](#explore-the-downloaded-logs)
@@ -574,9 +574,9 @@ The _operator_ merges all the contract fragments shared by the collaborators and
 <!--TODO (phanic): Get rid of the operator agreeing upon the contract.-->
 The collaborating parties can now query the governance service to get the proposed contract, run their validations and accept or reject the contract.
 
-
+<!--TODO (phanic): Add query to figure out the contract ID by hitting CGS.-->
 ```powershell
-./scripts/contract/confirm-contract.ps1 -contractId "collab-$demo"
+./scripts/contract/confirm-contract.ps1 -contractId $contractId
 ```
 
 
@@ -592,7 +592,7 @@ $env:AZCLI_CLEANROOM_SIDECARS_VERSIONS_DOCUMENT_URL = "localhost:5001/sidecar-di
 -->
 
 ```powershell
-./scripts/contract/register-deployment-artefacts.ps1 -demo $demo
+./scripts/contract/register-deployment-artefacts.ps1 -contractId $contractId
 ```
 
 > [!TIP]
@@ -615,7 +615,7 @@ Once the *ARM template* and *CCE policy* proposals are available in the consorti
 
 
 ```powershell
-./scripts/contract/confirm-deployment-artefacts.ps1 -contractId "collab-$demo"
+./scripts/contract/confirm-deployment-artefacts.ps1 -contractId $contractId
 ```
 
 
@@ -628,7 +628,7 @@ The managed identities created earlier as part of [authoring the contract](#auth
 
 
 ```powershell
-./scripts/contract/grant-deployment-access.ps1 -demo $demo
+./scripts/contract/grant-deployment-access.ps1 -demo $demo -contractId $contractId
 ```
 
 The flow below is executed by all the collaborators in their respective Azure tenants.
@@ -664,7 +664,7 @@ Once the ARM template and CCE policy proposals have been accepted and access has
 
 
 ```powershell
-./scripts/cleanroom/deploy-cleanroom.ps1 -contractId "collab-$demo"
+./scripts/cleanroom/deploy-cleanroom.ps1 -contractId $contractId
 ```
 
 
@@ -672,11 +672,11 @@ Run the following script to wait for the cleanroom to exit.
 
 
 ```powershell
-./scripts/cleanroom/watch-cleanroom.ps1 -contractId "collab-$demo"
+./scripts/cleanroom/watch-cleanroom.ps1 -contractId $contractId
 ```
 
 
-## Download encrypted output
+## Download encrypted output (fabrikam, contosso)
 
 As part of the execution, the cleanroom application may write out any computed outputs to the datasinks configured. Post execution, this (encrypted) output can be downloaded from the the backing storage account and decrypt locally by the party owning the datasink.
 
