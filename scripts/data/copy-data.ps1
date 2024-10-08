@@ -26,14 +26,14 @@ if (Test-Path -Path $datasinkPath)
             --config $datastoreConfig `
             --dst $datastoreDir
         $dataDir = "$datastoreDir/$datastoreName"
-        Write-Host -ForegroundColor Yellow `
+        Write-Host "$($PSStyle.Formatting.FormatAccent)" `
             "Downloaded data for datasink '$persona-$dir' ($datastoreName) " `
             "to '$dataDir'."
     }
 }
 else
 {
-    Write-Host -ForegroundColor Yellow `
+    Write-Host "$($PSStyle.Formatting.ErrorAccent)" `
         "No data download required for persona '$persona' in demo '$demo'."
 }
 

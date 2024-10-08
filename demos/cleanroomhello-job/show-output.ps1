@@ -16,23 +16,24 @@ if (Test-Path -Path $datasinkPath)
     foreach ($dir in $dirs)
     {
         $datasinkName = "$persona-$dir".ToLower()
-        Write-Host -ForegroundColor DarkGray `
+        Write-Host "$($PSStyle.Dim)$($PSStyle.Italic)" `
             "Enumerated datasink '$datasinkName' in '$datasinkPath'..."
 
         $datastoreName = "$demo-$persona-$dir".ToLower()
         # TODO (phanic): Understand why this is being copied into a nested folder.
-        $datastoreFolder = "$datastoreDir/$datastoreName/$datastoreName"
-        Write-Host -ForegroundColor Yellow `
+        $datastoreFolder = "$datastoreDir/$datastoreName/**"
+        Write-Host "$($PSStyle.Formatting.FormatAccent)" `
             "Output from datastore '$datastoreName':"
-        Write-Host -ForegroundColor DarkGray `
-            "-----BEGIN OUTPUT-----"
+        Write-Host "$($PSStyle.Dim)$($PSStyle.Italic)" `
+            "-----BEGIN OUTPUT-----" `
+            "$($PSStyle.Reset)"
         gzip -c -d $datastoreFolder/*.gz
-        Write-Host -ForegroundColor DarkGray `
+        Write-Host "$($PSStyle.Dim)$($PSStyle.Italic)" `
             "-----END OUTPUT-----"
     }
 }
 else
 {
-    Write-Host -ForegroundColor Yellow `
+    Write-Host "$($PSStyle.Formatting.ErrorAccent)" `
         "No output available for persona '$persona' in demo '$demo'."
 }

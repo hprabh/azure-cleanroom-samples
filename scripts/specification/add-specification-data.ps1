@@ -24,7 +24,7 @@ $PSNativeCommandUseErrorActionPreference = $true
 $contractConfigResult = Get-Content $contractConfig | ConvertFrom-Json
 $environmentConfigResult = Get-Content $environmentConfig | ConvertFrom-Json
 
-Write-Host -ForegroundColor DarkGray `
+Write-Host "$($PSStyle.Formatting.CustomTableHeaderLabel)" `
     "Adding datasources and datasinks for '$persona' in the '$demo' demo to " `
     "'$($contractConfigResult.contractFragment)'..."
 
@@ -42,13 +42,13 @@ if (Test-Path -Path $datasourcePath)
             --datastore-name $datastoreName `
             --key-vault $environmentConfigResult.dek.kv.id `
             --identity "$persona-identity"
-        Write-Host -ForegroundColor Yellow `
+        Write-Host "$($PSStyle.Formatting.FormatAccent)" `
             "Added datasource '$datasourceName' ($datastoreName)."
     }
 }
 else
 {
-    Write-Host -ForegroundColor Yellow `
+    Write-Host "$($PSStyle.Formatting.ErrorAccent)" `
         "No datasource required for persona '$persona' in demo '$demo'."
 }
 
@@ -66,12 +66,12 @@ if (Test-Path -Path $datasinkPath)
             --datastore-name $datastoreName `
             --key-vault $environmentConfigResult.dek.kv.id `
             --identity "$persona-identity"
-        Write-Host -ForegroundColor Yellow `
+        Write-Host "$($PSStyle.Formatting.FormatAccent)" `
             "Added datasink '$datasinkName' ($datastoreName)."
     }
 }
 else
 {
-    Write-Host -ForegroundColor Yellow `
+    Write-Host "$($PSStyle.Formatting.ErrorAccent)" `
         "No datasink required for persona '$persona' in demo '$demo'."
 }

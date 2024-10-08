@@ -11,5 +11,5 @@ param(
     [string]$datasinkPath = "$demosRoot/$demo/datasink/$persona"
 )
 
-Write-Host -ForegroundColor Yellow `
+Write-Host "$($PSStyle.Formatting.ErrorAccent)" `
     "No output available for persona '$persona' in demo '$demo'."

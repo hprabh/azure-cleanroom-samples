@@ -13,7 +13,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
-Write-Host -ForegroundColor DarkGray `
+Write-Host "$($PSStyle.Formatting.CustomTableHeaderLabel)" `
     "Adding '$collaborators' to the consortium..." 
 
 foreach ($collaboratorName in $collaborators)
@@ -33,6 +33,6 @@ foreach ($collaboratorName in $collaborators)
         --action accept `
         --governance-client $cgsClient
 
-    Write-Host -ForegroundColor Yellow `
+    Write-Host "$($PSStyle.Formatting.FormatAccent)" `
         "Added '$collaboratorName' to the consortium."
 }

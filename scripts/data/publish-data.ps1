@@ -30,7 +30,7 @@ if ($sa -eq "")
     $sa = $initResult.sa.id
 }
 
-Write-Host -ForegroundColor DarkGray `
+Write-Host "$($PSStyle.Formatting.CustomTableHeaderLabel)" `
     "Creating data stores for '$demo' demo in '$sa'..."
 
 if (Test-Path -Path $datasourcePath)
@@ -39,7 +39,7 @@ if (Test-Path -Path $datasourcePath)
     foreach ($dir in $dirs)
     {
         $datastoreName = "$demo-$persona-$dir".ToLower()
-        Write-Host -ForegroundColor DarkGray `
+        Write-Host "$($PSStyle.Dim)$($PSStyle.Italic)" `
             "Enumerated datasink '$datastoreName' in '$datasourcePath'..."
 
         az cleanroom datastore add `
@@ -51,7 +51,7 @@ if (Test-Path -Path $datasourcePath)
             --backingstore-id $sa
         $datastorePath = "$datastoreDir/$datastoreName"
         mkdir -p $datastorePath
-        Write-Host -ForegroundColor Yellow `
+        Write-Host "$($PSStyle.Formatting.FormatAccent)" `
             "Created data store '$datastoreName' backed by '$sa'."
 
         cp -r $datasourcePath/$dir/* $datastorePath
@@ -59,16 +59,15 @@ if (Test-Path -Path $datasourcePath)
             --name $datastoreName `
             --config $datastoreConfig `
             --src $datastorePath
-        Write-Host -ForegroundColor Yellow `
+        Write-Host "$($PSStyle.Formatting.FormatAccent)" `
             "Published data from '$datasourcePath/$dir' as data store '$datastoreName'."
     }
 }
 else
 {
-    Write-Host -ForegroundColor Yellow `
+    Write-Host "$($PSStyle.Formatting.ErrorAccent)" `
         "No datasource required for persona '$persona' in demo '$demo'."
 }
-
 
 if (Test-Path -Path $datasinkPath)
 {
@@ -76,7 +75,7 @@ if (Test-Path -Path $datasinkPath)
     foreach ($dir in $dirs)
     {
         $datastoreName = "$demo-$persona-$dir".ToLower()
-        Write-Host -ForegroundColor DarkGray `
+        Write-Host "$($PSStyle.Dim)$($PSStyle.Italic)" `
             "Enumerated datasink '$datastoreName' in '$datasinkPath'..."
 
         az cleanroom datastore add `
@@ -88,12 +87,12 @@ if (Test-Path -Path $datasinkPath)
             --backingstore-id $sa
         $datastorePath = "$datastoreDir/$datastoreName"
         mkdir -p $datastorePath
-        Write-Host -ForegroundColor Yellow `
+        Write-Host "$($PSStyle.Formatting.FormatAccent)" `
             "Created data store '$datastoreName' backed by '$sa'."
     }
 }
 else
 {
-    Write-Host -ForegroundColor Yellow `
+    Write-Host "$($PSStyle.Formatting.ErrorAccent)" `
         "No datasink required for persona '$persona' in demo '$demo'."
 }

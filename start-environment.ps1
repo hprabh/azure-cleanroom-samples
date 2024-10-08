@@ -23,7 +23,7 @@ function Get-Confirmation {
     )
 
     do {
-        $choice = Read-Host `
+        $choice = Read-Host "$($PSStyle.Formatting.Warning)" `
             "$Message ($YesLabel/$NoLabel)"
         $choice = $choice.ToLower()
         switch ($choice) {
@@ -36,7 +36,8 @@ function Get-Confirmation {
                 break
             }
             default {
-                Write-Host "Invalid input. Please enter '$YesLabel' or '$NoLabel'."
+                Write-Host "$($PSStyle.Formatting.Error)" `
+                    "Invalid input. Please enter '$YesLabel' or '$NoLabel'."
             }
         }
     } while ($response -ne $YesLabel.ToLower() -and $response -ne $NoLabel.ToLower())
@@ -53,13 +54,13 @@ if ($null -eq $container)
 else
 {
     # TODO (phanic): Scrub all Write-Host to have right colours and background.
-    Write-Host -ForegroundColor Yellow `
+    Write-Host "$($PSStyle.Formatting.ErrorAccent)" `
         "Samples environment for '$persona' already exists - $($container.Names) ($($container.ID))."
     $overwrite = $overwrite -or
         (Get-Confirmation -Message "Overwrite container '$containerName'?" -YesLabel "Y" -NoLabel "N")
     if ($overwrite)
     {
-        Write-Host -ForegroundColor Yellow `
+        Write-Host "$($PSStyle.Formatting.Warning)" `
             "Deleting container '$containerName'..."
         docker container rm -f $containerName
         $createContainer = $true
@@ -72,7 +73,7 @@ else
 
 if ($createContainer)
 {
-    Write-Host -ForegroundColor Yellow `
+    Write-Host "$($PSStyle.Formatting.CustomTableHeaderLabel)" `
         "Creating samples environment '$containerName' using image '$imageName'..." 
 
     # TODO (phanic) Cut across to prebuilt docker image once we setup the repository.
@@ -80,7 +81,7 @@ if ($createContainer)
     $customCliExtensions = @(Get-Item -Path "./docker/*.whl")
     if (0 -ne $customCliExtensions.Count)
     {
-        Write-Host -ForegroundColor Yellow `
+        Write-Host "$($PSStyle.Formatting.Warning)" `
             "Using custom az cli extensions: $customCliExtensions..."
         $dockerArgs += " --build-arg EXTENSION_SOURCE=local"
     }
@@ -101,11 +102,11 @@ if ($createContainer)
         --network host `
         --name $containerName `
         -it $imageName
-    Write-Host -ForegroundColor Yellow `
+    Write-Host "$($PSStyle.Formatting.FormatAccent)" `
         "Created container '$containerName' to start samples environment for " `
         "'$persona'. Environment will be using resource group '$resourceGroup'."
 }
 
-Write-Host -ForegroundColor DarkGray `
+Write-Host "$($PSStyle.Dim)$($PSStyle.Italic)" `
     "Starting samples environment..."
 docker container start -a -i $containerName

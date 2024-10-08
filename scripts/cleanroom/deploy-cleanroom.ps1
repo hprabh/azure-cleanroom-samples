@@ -16,7 +16,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
-Write-Host -ForegroundColor DarkGray `
+Write-Host "$($PSStyle.Formatting.CustomTableHeaderLabel)" `
     "Deploying clean room for contract '$contractId'..." 
 
 # Get the agreed upon ARM template for deployment.
@@ -31,6 +31,6 @@ az deployment group create `
     --name $cleanRoomName `
     --template-file "$artefactsDir/accepted-deployment-template.json"
 
-Write-Host -ForegroundColor Yellow `
+Write-Host "$($PSStyle.Formatting.FormatAccent)" `
     "Deployed clean room '$cleanRoomName' for contract '$contractId' to '$resourceGroup'." 
 

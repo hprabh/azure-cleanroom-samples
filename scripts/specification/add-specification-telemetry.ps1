@@ -23,7 +23,7 @@ $PSNativeCommandUseErrorActionPreference = $true
 $contractConfigResult = Get-Content $contractConfig | ConvertFrom-Json
 $environmentConfigResult = Get-Content $environmentConfig | ConvertFrom-Json
 
-Write-Host -ForegroundColor DarkGray `
+Write-Host "$($PSStyle.Formatting.CustomTableHeaderLabel)" `
     "Adding telemetry details for '$persona' in the '$demo' demo to " `
     "'$($configResult.contractFragment)'..."
 
@@ -36,7 +36,7 @@ az cleanroom config set-logging `
     --identity "$persona-identity" `
     --key-vault $environmentConfigResult.dek.kv.id `
     --encryption-mode CPK
-Write-Host -ForegroundColor Yellow `
+Write-Host "$($PSStyle.Formatting.FormatAccent)" `
     "Added application telemetry details."
 
 az cleanroom config set-telemetry `
@@ -47,6 +47,6 @@ az cleanroom config set-telemetry `
     --identity "$persona-identity" `
     --key-vault $environmentConfigResult.dek.kv.id `
     --encryption-mode CPK
-Write-Host -ForegroundColor Yellow `
+Write-Host "$($PSStyle.Formatting.FormatAccent)" `
     "Added infrastructure telemetry details."
 

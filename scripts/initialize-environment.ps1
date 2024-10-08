@@ -22,7 +22,7 @@ $PSNativeCommandUseErrorActionPreference = $true
 
 Import-Module $PSScriptRoot/azure-helpers/azure-helpers.psm1 -Force -DisableNameChecking
 
-Write-Host -ForegroundColor DarkGray `
+Write-Host "$($PSStyle.Formatting.CustomTableHeaderLabel)" `
     "Creating resource group '$resourceGroup' in '$resourceGroupLocation'..."
 az group create --location $resourceGroupLocation --name $resourceGroup --tags $resourceGroupTags
 
@@ -47,7 +47,7 @@ $objectId = GetLoggedInEntityObjectId
 $kvName = $($overrides['$KEYVAULT_NAME'] ?? "${uniqueString}kv")
 $mhsmName = $($overrides['$MHSM_NAME'] ?? "${uniqueString}mhsm")
 if ($kvType -eq "mhsm") {
-    Write-Host -ForegroundColor DarkGray `
+    Write-Host "$($PSStyle.Formatting.CustomTableHeaderLabel)" `
         "Creating HSM '$mhsmName' in resource group '$resourceGroup'..."
     $keyStore = Create-Hsm `
         -resourceGroup $resourceGroup `
@@ -58,7 +58,7 @@ if ($kvType -eq "mhsm") {
     $result.kek.kv = $keyStore
     # Creating the Key Vault upfront so as not to run into naming issues
     # while storing the wrapped DEK
-    Write-Host -ForegroundColor DarkGray `
+    Write-Host "$($PSStyle.Formatting.CustomTableHeaderLabel)" `
         "Creating Key Vault '$kvName' to store the wrapped DEK..."
     $result.dek.kv = Create-KeyVault `
         -resourceGroup $resourceGroup `
@@ -66,7 +66,7 @@ if ($kvType -eq "mhsm") {
         -adminObjectId $objectId
 }
 else {
-    Write-Host -ForegroundColor DarkGray `
+    Write-Host "$($PSStyle.Formatting.CustomTableHeaderLabel)" `
         "Creating Key Vault '$kvName' in resource group '$resourceGroup'..."
     $result.kek.kv = Create-KeyVault `
         -resourceGroup $resourceGroup `
@@ -91,6 +91,6 @@ $result.oidcsa = Create-Storage-Resources `
 $result.maa_endpoint = $maaEndpoint
 
 $result | ConvertTo-Json -Depth 100 | Out-File "$environmentConfig"
-Write-Host -ForegroundColor Yellow `
+Write-Host "$($PSStyle.Formatting.FormatAccent)" `
     "Initialization configuration written to '$environmentConfig'."
 return $result

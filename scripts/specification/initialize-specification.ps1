@@ -25,7 +25,7 @@ Import-Module $PSScriptRoot/../azure-helpers/azure-helpers.psm1 -Force -DisableN
 
 $initResult = Get-Content $environmentConfig | ConvertFrom-Json
 
-Write-Host -ForegroundColor DarkGray `
+Write-Host "$($PSStyle.Formatting.CustomTableHeaderLabel)" `
     "Initializing cleanroom specification '$contractFragment'..." 
 az cleanroom config init `
     --cleanroom-config $contractFragment
@@ -40,7 +40,7 @@ if ($managedIdentityName -eq "")
     $managedIdentityName = "${uniqueString}-mi-$demo"
 }
 
-Write-Host -ForegroundColor DarkGray `
+Write-Host "$($PSStyle.Formatting.CustomTableHeaderLabel)" `
     "Creating managed identity '$managedIdentityName' in resource group '$resourceGroup'..."
 $mi = (az identity create `
     --name $managedIdentityName `
@@ -51,7 +51,7 @@ az cleanroom config add-identity az-federated `
     --client-id $mi.clientId `
     --tenant-id $mi.tenantId `
     --backing-identity cleanroom_cgs_oidc
-Write-Host -ForegroundColor Yellow `
+Write-Host "$($PSStyle.Formatting.FormatAccent)" `
     "Added identity '$persona-identity' backed by '$managedIdentityName'."
 
 $configResult = @{
@@ -62,6 +62,6 @@ $configResult.contractFragment = $contractFragment
 $configResult.mi = $mi
 
 $configResult | ConvertTo-Json -Depth 100 | Out-File $contractConfig
-Write-Host -ForegroundColor Yellow `
+Write-Host "$($PSStyle.Formatting.FormatAccent)" `
     "Contract configuration written to '$contractConfig'."
 return $configResult

@@ -28,7 +28,7 @@ if ($telemetryConfigured)
         --target-folder $datastoreDir
     # TODO (phanic): Fetch exact name of the backing datastore from the clean room spec.
     $dataDir = "$datastoreDir/infrastructure-telemetry-*"
-    Write-Host -ForegroundColor Yellow `
+    Write-Host "$($PSStyle.Formatting.FormatAccent)" `
         "Downloaded infrastructure telemetry to '$dataDir'."
 
     az cleanroom logs download `
@@ -37,12 +37,12 @@ if ($telemetryConfigured)
         --target-folder $datastoreDir
     # TODO (phanic): Fetch exact name of the backing datastore from the clean room spec.
     $dataDir = "$datastoreDir/application-telemetry-*"
-    Write-Host -ForegroundColor Yellow `
+    Write-Host "$($PSStyle.Formatting.FormatAccent)" `
         "Downloaded application telemetry to '$dataDir'."
 }
 else
 {
-    Write-Host  -ForegroundColor Yellow
+    Write-Host "$($PSStyle.Formatting.ErrorAccent)" `
         "No telemetry download available for persona '$persona' in demo '$demo'."
 }
 

@@ -9,7 +9,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
-Write-Host -ForegroundColor DarkGray `
+Write-Host "$($PSStyle.Formatting.CustomTableHeaderLabel)" `
     "Accepting contract '$contractId'..." 
 
 $contract = (az cleanroom governance contract show `
@@ -26,6 +26,6 @@ az cleanroom governance contract vote `
     --action accept `
     --governance-client $cgsClient
 
-Write-Host -ForegroundColor Yellow `
+Write-Host "$($PSStyle.Formatting.FormatAccent)" `
     "Accepted contract '$contractId'." 
 

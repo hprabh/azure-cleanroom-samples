@@ -15,13 +15,13 @@ param(
 
 if (-not (("litware") -contains $persona))
 {
-    Write-Host -ForegroundColor Yellow `
+    Write-Host "$($PSStyle.Formatting.ErrorAccent)" `
         "No action required for persona '$persona' in demo '$demo'."
     return
 }
 
 $configResult = Get-Content $contractConfig | ConvertFrom-Json
-Write-Host -ForegroundColor DarkGray `
+Write-Host "$($PSStyle.Formatting.CustomTableHeaderLabel)" `
     "Adding application details for '$persona' in the '$demo' demo to " `
     "'$($configResult.contractFragment)'..."
 
@@ -42,5 +42,5 @@ az cleanroom config add-application-endpoint `
     --application-name demoapp-$demo `
     --port 8310
 
-Write-Host -ForegroundColor Yellow `
+Write-Host "$($PSStyle.Formatting.FormatAccent)" `
     "Added application 'demoapp-$demo' ($image)."

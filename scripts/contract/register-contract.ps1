@@ -18,8 +18,8 @@ param(
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
-Write-Host -ForegroundColor DarkGray `
-    "Generating cleanroom specification for contract '$contractId' at '$cleanroomConfig'..." 
+Write-Host "$($PSStyle.Formatting.CustomTableHeaderLabel)" `
+    "Generating cleanroom specification for contract '$contractId' at '$cleanroomConfig'..."
 az cleanroom config init `
     --cleanroom-config $cleanroomConfig
 
@@ -29,19 +29,19 @@ $azArgs = "cleanroom config view --cleanroom-config $cleanroomConfig --output-fi
 foreach ($collaboratorName in $collaborators)
 {
     $fragment = "$publicDir/$collaboratorName-$demo.config"
-    Write-Host -ForegroundColor DarkGray `
+    Write-Host "$($PSStyle.Dim)$($PSStyle.Italic)" `
         "Adding fragment for '$collaboratorName' ('$fragment')..."
     $azArgs = $azArgs + "$fragment "
 }
 
 Start-Process az $azArgs -Wait
-Write-Host -ForegroundColor Yellow `
+Write-Host "$($PSStyle.Formatting.FormatAccent)" `
     "Generated cleanroom specification for contract '$contractId' at '$cleanroomConfig'." 
 
 # Validate the contract structure before proposing.
 az cleanroom config validate --cleanroom-config $cleanroomConfig
 
-Write-Host -ForegroundColor DarkGray `
+Write-Host "$($PSStyle.Dim)$($PSStyle.Italic)" `
     "Proposing contract '$contractId' to the consortium..." 
 
 $data = Get-Content -Raw $cleanroomConfig
@@ -64,5 +64,5 @@ az cleanroom governance contract propose `
     --output tsv `
     --governance-client $cgsClient
 
-Write-Host -ForegroundColor DarkGray `
+Write-Host "$($PSStyle.Formatting.FormatAccent)" `
     "Proposed contract for '$contractId' to the consortium." 

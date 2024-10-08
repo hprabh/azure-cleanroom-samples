@@ -13,7 +13,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
-Write-Host -ForegroundColor DarkGray `
+Write-Host "$($PSStyle.Dim)" `
     "Joining consortium '$ccfEndpoint'..."
 
 # Deploy client-side containers to interact with the governance service as the new member.
@@ -26,5 +26,5 @@ az cleanroom governance client deploy `
 # Accept the invitation and becomes an active member in the consortium.
 az cleanroom governance member activate --governance-client $cgsClient
 
-Write-Host -ForegroundColor Yellow `
+Write-Host "$($PSStyle.Formatting.Warning)" `
     "Joined consortium '$ccfEndpoint' and deployed CGS client '$cgsClient'."

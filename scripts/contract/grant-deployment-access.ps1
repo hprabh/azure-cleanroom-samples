@@ -27,7 +27,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
-Write-Host -ForegroundColor DarkGray `
+Write-Host "$($PSStyle.Formatting.CustomTableHeaderLabel)" `
     "Granting access to resources required for '$demo' demo to deployments implementing " `
     "contract '$contractId'..." 
 
@@ -53,7 +53,7 @@ $managedIdentity = $contractConfigResult.mi
 
 # Cleanroom needs both read/write permissions on storage account, hence assigning Storage Blob Data Contributor.
 $role = "Storage Blob Data Contributor"
-Write-Host -ForegroundColor DarkGray `
+Write-Host "$($PSStyle.Dim)$($PSStyle.Italic)" `
     "Assigning permission for '$role' to '$($managedIdentity.name)' on " `
     "storage account '$($environmentConfigResult.sa.name)'"
 az role assignment create `
@@ -73,12 +73,12 @@ if ($kekVault.type -eq "Microsoft.KeyVault/managedHSMs") {
             --hsm-name $kekVault.name `
             --role $role) | ConvertFrom-Json
     if ($roleAssignment.Length -eq 1) {
-        Write-Host -ForegroundColor Yellow `
+        Write-Host "$($PSStyle.Formatting.Warning)" `
             "Skipping assignment as '$role' permission already exists for " `
             "'$($managedIdentity.name)' on mHSM '$($kekVault.name)'."
     }
     else {
-        Write-Host -ForegroundColor DarkGray `
+        Write-Host "$($PSStyle.Dim)$($PSStyle.Italic)" `
             "Assigning permissions for '$role' to '$($managedIdentity.name)' on " `
             "mHSM '$($kekVault.name)'"
         az keyvault role assignment create `
@@ -98,12 +98,12 @@ elseif ($kekVault.type -eq "Microsoft.KeyVault/vaults") {
             --scope $kekVault.id `
             --role $role) | ConvertFrom-Json
     if ($roleAssignment.Length -eq 1) {
-        Write-Host -ForegroundColor Yellow `
+        Write-Host "$($PSStyle.Formatting.Warning)" `
             "Skipping assignment as '$role' permission already exists for " `
             "'$($managedIdentity.name)' on key vault '$($kekVault.name)'."
     }
     else {
-        Write-Host -ForegroundColor DarkGray `
+        Write-Host "$($PSStyle.Dim)$($PSStyle.Italic)" `
             "Assigning permissions for '$role' to '$($managedIdentity.name)' on " `
             "key vault '$($kekVault.name)'"
         az role assignment create `
@@ -118,7 +118,7 @@ elseif ($kekVault.type -eq "Microsoft.KeyVault/vaults") {
 # DEK vault access.
 $dekVault = $environmentConfigResult.dek.kv
 $role = "Key Vault Secrets User"
-Write-Host -ForegroundColor DarkGray `
+Write-Host "$($PSStyle.Dim)$($PSStyle.Italic)" `
     "Assigning permission for '$role' to '$($managedIdentity.name)' on " `
     "storage account '$($dekVault.name)'"
 az role assignment create `
@@ -137,25 +137,25 @@ $tenantData = (az cleanroom governance oidc-issuer show `
         --query "tenantData" | ConvertFrom-Json)
 if ($null -ne $tenantData -and $tenantData.tenantId -eq $tenantId) {
     $issuerUrl = $tenantData.issuerUrl
-    Write-Host -ForegroundColor Yellow `
+    Write-Host "$($PSStyle.Formatting.Warning)" `
         "OIDC issuer already set for tenant '$tenantId' to '$issuerUrl'. Skipping!"
 }
 else {
     $oidcsa = $environmentConfigResult.oidcsa.name
-    Write-Host -ForegroundColor DarkGray `
+    Write-Host "$($PSStyle.Dim)$($PSStyle.Italic)" `
         "Setting up OIDC issuer for tenant '$tenantId' using storage account '$oidcsa'..."
 
     az storage account update --allow-blob-public-access true `
         --name $oidcsa
-    Write-Host -ForegroundColor Yellow `
+    Write-Host "$($PSStyle.Formatting.FormatAccent)" `
         "Enabled public blob access for '$oidcsa'."
 
     $sleepTime = 30
-    Write-Host -ForegroundColor DarkGray `
+    Write-Host "$($PSStyle.Dim)$($PSStyle.Italic)" `
         "Waiting for $sleepTime seconds for public blob access to be enabled..."
     Start-Sleep -Seconds $sleepTime
 
-    Write-Host -ForegroundColor DarkGray `
+    Write-Host "$($PSStyle.Formatting.CustomTableHeaderLabel)" `
         "Creating public access blob container '$oidcContainerName' in '$oidcsa'..."
     az storage container create `
         --name $oidcContainerName `
@@ -163,11 +163,12 @@ else {
         --public-access blob `
         --auth-mode login
     CheckLastExitCode
-    Write-Host -ForegroundColor Yellow `
+    Write-Host "$($PSStyle.Formatting.FormatAccent)" `
         "Created public access blob container '$oidcContainerName' in '$oidcsa'."
 
-    Write-Host -ForegroundColor DarkGray `
-        "Uploading openid-configuration to container '$oidcContainerName' in '$oidcsa'..."
+    Write-Host "$($PSStyle.Dim)$($PSStyle.Italic)" `
+        "Uploading openid-configuration to container '$oidcContainerName' in '$oidcsa'..." `
+        "$($PSStyle.Reset)"
     @"
 {
 "issuer": "https://$oidcsa.blob.core.windows.net/$oidcContainerName",
@@ -192,7 +193,7 @@ else {
         --auth-mode login
     CheckLastExitCode
 
-    Write-Host -ForegroundColor DarkGray `
+    Write-Host "$($PSStyle.Dim)$($PSStyle.Italic)" `
         "Uploading jwks to container '$oidcContainerName' in '$oidcsa'..."
     $url = "$ccfEndpoint/app/oidc/keys"
     curl -s -k $url | jq | Out-File $privateDir/jwks.json
@@ -205,7 +206,7 @@ else {
         --auth-mode login
     CheckLastExitCode
 
-    Write-Host -ForegroundColor DarkGray `
+    Write-Host "$($PSStyle.Dim)$($PSStyle.Italic)" `
         "Setting OIDC issuer for tenant '$tenantId'..."
     az cleanroom governance oidc-issuer set-issuer-url `
         --governance-client $cgsClient `
@@ -215,14 +216,14 @@ else {
             --query "tenantData" | ConvertFrom-Json)
     $issuerUrl = $tenantData.issuerUrl
 
-    Write-Host -ForegroundColor Yellow `
+    Write-Host "$($PSStyle.Formatting.FormatAccent)" `
         "Set OIDC issuer for tenant '$tenantId' to '$issuerUrl'."
 }
 
 #
 # Setup federated credential on managed identity.
 #
-Write-Host -ForegroundColor DarkGray `
+Write-Host "$($PSStyle.Formatting.CustomTableHeaderLabel)" `
     "Setting up federation on managed identity '$($managedIdentity.name)' for " `
     "issuer '$issuerUrl' and subject '$contractId'..."
 az identity federated-credential create `
@@ -234,10 +235,10 @@ az identity federated-credential create `
 
 # See Note at https://learn.microsoft.com/en-us/azure/aks/workload-identity-deploy-cluster#create-the-federated-identity-credential
 $sleepTime = 30
-Write-Host -ForegroundColor DarkGray `
+Write-Host "$($PSStyle.Dim)$($PSStyle.Italic)" `
     "Waiting for $sleepTime seconds for federated identity credential to propagate..."
 Start-Sleep -Seconds $sleepTime
 
-Write-Host -ForegroundColor Yellow `
+Write-Host "$($PSStyle.Formatting.FormatAccent)" `
     "Granted access to resources required for '$demo' demo to deployments implementing " `
     "contract '$contractId' through federation on managed identity '$($managedIdentity.name)'." 
