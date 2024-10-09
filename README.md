@@ -583,8 +583,7 @@ The collaborating parties can now query the governance service to get the propos
 ## Propose ARM template, CCE policy and log collection (operator)
 Once the contract is accepted by all the collaborators, the _operator_ generates the artefacts required for deploying a _*CCR*_ instance for the contained clean room specification using Azure Confidential Container Instances ([_C-ACI_](https://learn.microsoft.com/azure/container-instances/container-instances-confidential-overview)) and proposes them to the consortium.
 
-<!--TODO (phanic):
-We need to figure out a means to publish images and digests from main to registry that can be consumed in this step.
+<!--TODO (phanic): Figure out a means to publish images and digests from main to registry that can be consumed in this step.
 
 Current workaround is to build main locally and publish to a local registry:
 $env:AZCLI_CLEANROOM_CONTAINER_REGISTRY_URL = "localhost:5001"
@@ -709,9 +708,10 @@ The above command downloads and decrypt the various files for metrics, traces an
 ## Explore the downloaded logs
 See the logs emitted by the application container using the below command:
 
-<!--TODO (phanic): Update this command.-->
+
+<!--TODO (phanic): Clean up this command by using exact data store name.-->
 ```powershell
-cat ./publisher-demo/logs/application-telemetry/demo-app.log
+cat ./demo-resources.private/datastores/application-telemetry-*/**/demoapp-$demo.log
 ```
 
 
@@ -732,7 +732,7 @@ One can also inspect the telemetry emitted by the clean room infrastructure cont
 The infrastructure containers traces, logs and metrics that are useful for debugging errors, tracing the execution sequence etc.
 
 To view the telemetry, run the following command:
-<!--TODO (phanic): Update this command.-->
+<!--TODO (phanic): This command fails with docker-on-docker as the compose file is using a relative path.-->
 ```powershell
 az cleanroom telemetry aspire-dashboard `
     --telemetry-folder ./publisher-demo/telemetry/infrastructure-telemetry
@@ -764,7 +764,8 @@ Either publisher or the consumer can also check for any audit events raised by t
 az cleanroom governance contract event list `
     --contract-id $contractId `
     --all `
-    --governance-client "publisher-client"
+    --governance-client $env:PERSONA-client
+    --query "value[*].[id, data.source, timestamp_iso, data.message]"
 ```
 This shows output as below:
 ```json

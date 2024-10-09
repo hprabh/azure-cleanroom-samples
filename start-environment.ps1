@@ -55,7 +55,7 @@ if ($null -eq $container)
 else
 {
     Write-Log Warning `
-        "Samples environment for '$persona' already exists - $($container.Names) ($($container.ID))."
+        "Samples environment for '$persona' already exists - '$($container.Names)' (ID: $($container.ID))."
     $overwrite = $overwrite -or
         (Get-Confirmation -Message "Overwrite container '$containerName'?" -YesLabel "Y" -NoLabel "N")
     if ($overwrite)
@@ -112,4 +112,4 @@ Write-Log OperationStarted `
 docker container start -a -i $containerName
 
 Write-Log Warning `
-    "Samples environment exited."
+    "Samples environment exited!"
