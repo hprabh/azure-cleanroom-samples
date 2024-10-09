@@ -20,10 +20,12 @@ param(
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
+Import-Module $PSScriptRoot/../common/common.psm1
+
 $contractConfigResult = Get-Content $contractConfig | ConvertFrom-Json
 $environmentConfigResult = Get-Content $environmentConfig | ConvertFrom-Json
 
-Write-Host "$($PSStyle.Formatting.CustomTableHeaderLabel)" `
+Write-Log OperationStarted `
     "Adding telemetry details for '$persona' in the '$demo' demo to " `
     "'$($configResult.contractFragment)'..."
 
@@ -36,7 +38,7 @@ az cleanroom config set-logging `
     --identity "$persona-identity" `
     --key-vault $environmentConfigResult.dek.kv.id `
     --encryption-mode CPK
-Write-Host "$($PSStyle.Formatting.FormatAccent)" `
+Write-Log OperationCompleted `
     "Added application telemetry details."
 
 az cleanroom config set-telemetry `
@@ -47,6 +49,6 @@ az cleanroom config set-telemetry `
     --identity "$persona-identity" `
     --key-vault $environmentConfigResult.dek.kv.id `
     --encryption-mode CPK
-Write-Host "$($PSStyle.Formatting.FormatAccent)" `
+Write-Log OperationCompleted `
     "Added infrastructure telemetry details."
 

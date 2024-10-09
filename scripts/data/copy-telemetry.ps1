@@ -15,6 +15,12 @@ param(
     [string]$datastoreConfig = "$privateDir/datastores.config"
 )
 
+#https://learn.microsoft.com/en-us/powershell/scripting/learn/experimental-features?view=powershell-7.4#psnativecommanderroractionpreference
+$ErrorActionPreference = 'Stop'
+$PSNativeCommandUseErrorActionPreference = $true
+
+Import-Module $PSScriptRoot/../common/common.psm1
+
 $contractConfigResult = Get-Content $contractConfig | ConvertFrom-Json
 
 # TODO (phanic): Add check to see if member had configured telemetry.
@@ -28,7 +34,7 @@ if ($telemetryConfigured)
         --target-folder $datastoreDir
     # TODO (phanic): Fetch exact name of the backing datastore from the clean room spec.
     $dataDir = "$datastoreDir/infrastructure-telemetry-*"
-    Write-Host "$($PSStyle.Formatting.FormatAccent)" `
+    Write-Log OperationCompleted `
         "Downloaded infrastructure telemetry to '$dataDir'."
 
     az cleanroom logs download `
@@ -37,12 +43,12 @@ if ($telemetryConfigured)
         --target-folder $datastoreDir
     # TODO (phanic): Fetch exact name of the backing datastore from the clean room spec.
     $dataDir = "$datastoreDir/application-telemetry-*"
-    Write-Host "$($PSStyle.Formatting.FormatAccent)" `
+    Write-Log OperationCompleted `
         "Downloaded application telemetry to '$dataDir'."
 }
 else
 {
-    Write-Host "$($PSStyle.Formatting.ErrorAccent)" `
-        "No telemetry download available for persona '$persona' in demo '$demo'."
+    Write-Log Warning `
+        "No telemetry available for persona '$persona' in demo '$demo'."
 }
 

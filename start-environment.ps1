@@ -15,6 +15,8 @@ param(
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
+Import-Module $PSScriptRoot/scripts/common/common.psm1
+
 function Get-Confirmation {
     param (
         [string]$Message = "Are you sure?",
@@ -23,8 +25,7 @@ function Get-Confirmation {
     )
 
     do {
-        $choice = Read-Host "$($PSStyle.Formatting.Warning)" `
-            "$Message ($YesLabel/$NoLabel)"
+        $choice = Read-Host "$($PSStyle.Bold)$Message ('$YesLabel'/'$NoLabel') :$($PSStyle.Reset)"
         $choice = $choice.ToLower()
         switch ($choice) {
             $YesLabel.ToLower() {
@@ -36,7 +37,7 @@ function Get-Confirmation {
                 break
             }
             default {
-                Write-Host "$($PSStyle.Formatting.Error)" `
+                Write-Log Error `
                     "Invalid input. Please enter '$YesLabel' or '$NoLabel'."
             }
         }
@@ -53,14 +54,13 @@ if ($null -eq $container)
 }
 else
 {
-    # TODO (phanic): Scrub all Write-Host to have right colours and background.
-    Write-Host "$($PSStyle.Formatting.ErrorAccent)" `
+    Write-Log Warning `
         "Samples environment for '$persona' already exists - $($container.Names) ($($container.ID))."
     $overwrite = $overwrite -or
         (Get-Confirmation -Message "Overwrite container '$containerName'?" -YesLabel "Y" -NoLabel "N")
     if ($overwrite)
     {
-        Write-Host "$($PSStyle.Formatting.Warning)" `
+        Write-Log Warning `
             "Deleting container '$containerName'..."
         docker container rm -f $containerName
         $createContainer = $true
@@ -73,7 +73,7 @@ else
 
 if ($createContainer)
 {
-    Write-Host "$($PSStyle.Formatting.CustomTableHeaderLabel)" `
+    Write-Log OperationStarted `
         "Creating samples environment '$containerName' using image '$imageName'..." 
 
     # TODO (phanic) Cut across to prebuilt docker image once we setup the repository.
@@ -81,7 +81,7 @@ if ($createContainer)
     $customCliExtensions = @(Get-Item -Path "./docker/*.whl")
     if (0 -ne $customCliExtensions.Count)
     {
-        Write-Host "$($PSStyle.Formatting.Warning)" `
+        Write-Log Warning `
             "Using custom az cli extensions: $customCliExtensions..."
         $dockerArgs += " --build-arg EXTENSION_SOURCE=local"
     }
@@ -102,11 +102,14 @@ if ($createContainer)
         --network host `
         --name $containerName `
         -it $imageName
-    Write-Host "$($PSStyle.Formatting.FormatAccent)" `
+    Write-Log OperationCompleted `
         "Created container '$containerName' to start samples environment for " `
         "'$persona'. Environment will be using resource group '$resourceGroup'."
 }
 
-Write-Host "$($PSStyle.Dim)$($PSStyle.Italic)" `
-    "Starting samples environment..."
+Write-Log OperationStarted `
+    "Starting samples environment using container '$containerName'..."
 docker container start -a -i $containerName
+
+Write-Log Warning `
+    "Samples environment exited."

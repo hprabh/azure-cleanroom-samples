@@ -13,15 +13,21 @@ param(
     [string]$contractConfig = "$privateDir/$resourceGroup-$demo.generated.json"
 )
 
+#https://learn.microsoft.com/en-us/powershell/scripting/learn/experimental-features?view=powershell-7.4#psnativecommanderroractionpreference
+$ErrorActionPreference = 'Stop'
+$PSNativeCommandUseErrorActionPreference = $true
+
+Import-Module $PSScriptRoot/../../scripts/common/common.psm1
+
 if (-not (("litware") -contains $persona))
 {
-    Write-Host "$($PSStyle.Formatting.ErrorAccent)" `
+    Write-Log Warning `
         "No action required for persona '$persona' in demo '$demo'."
     return
 }
 
 $configResult = Get-Content $contractConfig | ConvertFrom-Json
-Write-Host "$($PSStyle.Formatting.CustomTableHeaderLabel)" `
+Write-Log OperationStarted `
     "Adding application details for '$persona' in the '$demo' demo to " `
     "'$($configResult.contractFragment)'..."
 
@@ -39,5 +45,5 @@ az cleanroom config add-application `
     --cpu 0.5 `
     --memory 4
 
-Write-Host "$($PSStyle.Formatting.FormatAccent)" `
+Write-Log OperationCompleted `
     "Added application 'demoapp-$demo' ($image)."

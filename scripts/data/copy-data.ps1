@@ -13,6 +13,12 @@ param(
     [string]$datasinkPath = "$demosRoot/$demo/datasink/$persona"
 )
 
+#https://learn.microsoft.com/en-us/powershell/scripting/learn/experimental-features?view=powershell-7.4#psnativecommanderroractionpreference
+$ErrorActionPreference = 'Stop'
+$PSNativeCommandUseErrorActionPreference = $true
+
+Import-Module $PSScriptRoot/../common/common.psm1
+
 if (Test-Path -Path $datasinkPath)
 {
     $dirs = Get-ChildItem -Path $datasinkPath -Directory -Name
@@ -26,14 +32,14 @@ if (Test-Path -Path $datasinkPath)
             --config $datastoreConfig `
             --dst $datastoreDir
         $dataDir = "$datastoreDir/$datastoreName"
-        Write-Host "$($PSStyle.Formatting.FormatAccent)" `
+        Write-Log OperationCompleted `
             "Downloaded data for datasink '$persona-$dir' ($datastoreName) " `
             "to '$dataDir'."
     }
 }
 else
 {
-    Write-Host "$($PSStyle.Formatting.ErrorAccent)" `
-        "No data download required for persona '$persona' in demo '$demo'."
+    Write-Log Warning `
+        "No datasink available for persona '$persona' in demo '$demo'."
 }
 

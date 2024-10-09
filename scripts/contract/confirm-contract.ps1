@@ -9,7 +9,9 @@ param(
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
-Write-Host "$($PSStyle.Formatting.CustomTableHeaderLabel)" `
+Import-Module $PSScriptRoot/../common/common.psm1
+
+Write-Log OperationStarted `
     "Accepting contract '$contractId'..." 
 
 $contract = (az cleanroom governance contract show `
@@ -26,6 +28,6 @@ az cleanroom governance contract vote `
     --action accept `
     --governance-client $cgsClient
 
-Write-Host "$($PSStyle.Formatting.FormatAccent)" `
+Write-Log OperationCompleted `
     "Accepted contract '$contractId'." 
 

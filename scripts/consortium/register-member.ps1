@@ -13,7 +13,9 @@ param(
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
-Write-Host "$($PSStyle.Formatting.CustomTableHeaderLabel)" `
+Import-Module $PSScriptRoot/../common/common.psm1
+
+Write-Log OperationStarted `
     "Adding '$collaborators' to the consortium..." 
 
 foreach ($collaboratorName in $collaborators)
@@ -33,6 +35,6 @@ foreach ($collaboratorName in $collaborators)
         --action accept `
         --governance-client $cgsClient
 
-    Write-Host "$($PSStyle.Formatting.FormatAccent)" `
+    Write-Log OperationCompleted `
         "Added '$collaboratorName' to the consortium."
 }

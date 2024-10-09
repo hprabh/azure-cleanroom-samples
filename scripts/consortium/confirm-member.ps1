@@ -13,7 +13,9 @@ param(
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
-Write-Host "$($PSStyle.Dim)" `
+Import-Module $PSScriptRoot/../common/common.psm1
+
+Write-Log OperationStarted `
     "Joining consortium '$ccfEndpoint'..."
 
 # Deploy client-side containers to interact with the governance service as the new member.
@@ -26,5 +28,5 @@ az cleanroom governance client deploy `
 # Accept the invitation and becomes an active member in the consortium.
 az cleanroom governance member activate --governance-client $cgsClient
 
-Write-Host "$($PSStyle.Formatting.Warning)" `
+Write-Log OperationCompleted `
     "Joined consortium '$ccfEndpoint' and deployed CGS client '$cgsClient'."

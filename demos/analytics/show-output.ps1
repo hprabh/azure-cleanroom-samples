@@ -11,5 +11,11 @@ param(
     [string]$datasinkPath = "$demosRoot/$demo/datasink/$persona"
 )
 
-Write-Host "$($PSStyle.Formatting.ErrorAccent)" `
+#https://learn.microsoft.com/en-us/powershell/scripting/learn/experimental-features?view=powershell-7.4#psnativecommanderroractionpreference
+$ErrorActionPreference = 'Stop'
+$PSNativeCommandUseErrorActionPreference = $true
+
+Import-Module $PSScriptRoot/../../scripts/common/common.psm1
+
+Write-Log Warning `
     "No output available for persona '$persona' in demo '$demo'."

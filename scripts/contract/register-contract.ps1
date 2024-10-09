@@ -18,7 +18,9 @@ param(
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
-Write-Host "$($PSStyle.Formatting.CustomTableHeaderLabel)" `
+Import-Module $PSScriptRoot/../common/common.psm1
+
+Write-Log OperationStarted `
     "Generating cleanroom specification for contract '$contractId' at '$cleanroomConfig'..."
 az cleanroom config init `
     --cleanroom-config $cleanroomConfig
@@ -29,19 +31,19 @@ $azArgs = "cleanroom config view --cleanroom-config $cleanroomConfig --output-fi
 foreach ($collaboratorName in $collaborators)
 {
     $fragment = "$publicDir/$collaboratorName-$demo.config"
-    Write-Host "$($PSStyle.Dim)$($PSStyle.Italic)" `
+    Write-Log Verbose `
         "Adding fragment for '$collaboratorName' ('$fragment')..."
     $azArgs = $azArgs + "$fragment "
 }
 
 Start-Process az $azArgs -Wait
-Write-Host "$($PSStyle.Formatting.FormatAccent)" `
+Write-Log OperationCompleted `
     "Generated cleanroom specification for contract '$contractId' at '$cleanroomConfig'." 
 
 # Validate the contract structure before proposing.
 az cleanroom config validate --cleanroom-config $cleanroomConfig
 
-Write-Host "$($PSStyle.Dim)$($PSStyle.Italic)" `
+Write-Log OperationStarted `
     "Proposing contract '$contractId' to the consortium..." 
 
 $data = Get-Content -Raw $cleanroomConfig
@@ -64,5 +66,5 @@ az cleanroom governance contract propose `
     --output tsv `
     --governance-client $cgsClient
 
-Write-Host "$($PSStyle.Formatting.FormatAccent)" `
+Write-Log OperationCompleted `
     "Proposed contract for '$contractId' to the consortium." 

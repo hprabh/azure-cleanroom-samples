@@ -21,10 +21,12 @@ param(
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
+Import-Module $PSScriptRoot/../common/common.psm1
+
 $contractConfigResult = Get-Content $contractConfig | ConvertFrom-Json
 $environmentConfigResult = Get-Content $environmentConfig | ConvertFrom-Json
 
-Write-Host "$($PSStyle.Formatting.CustomTableHeaderLabel)" `
+Write-Log OperationStarted `
     "Adding datasources and datasinks for '$persona' in the '$demo' demo to " `
     "'$($contractConfigResult.contractFragment)'..."
 
@@ -42,13 +44,13 @@ if (Test-Path -Path $datasourcePath)
             --datastore-name $datastoreName `
             --key-vault $environmentConfigResult.dek.kv.id `
             --identity "$persona-identity"
-        Write-Host "$($PSStyle.Formatting.FormatAccent)" `
+        Write-Log OperationCompleted `
             "Added datasource '$datasourceName' ($datastoreName)."
     }
 }
 else
 {
-    Write-Host "$($PSStyle.Formatting.ErrorAccent)" `
+    Write-Log Warning `
         "No datasource required for persona '$persona' in demo '$demo'."
 }
 
@@ -66,12 +68,12 @@ if (Test-Path -Path $datasinkPath)
             --datastore-name $datastoreName `
             --key-vault $environmentConfigResult.dek.kv.id `
             --identity "$persona-identity"
-        Write-Host "$($PSStyle.Formatting.FormatAccent)" `
+        Write-Log OperationCompleted `
             "Added datasink '$datasinkName' ($datastoreName)."
     }
 }
 else
 {
-    Write-Host "$($PSStyle.Formatting.ErrorAccent)" `
+    Write-Log Warning `
         "No datasink required for persona '$persona' in demo '$demo'."
 }

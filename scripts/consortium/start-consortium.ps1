@@ -14,13 +14,15 @@ param(
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
+Import-Module $PSScriptRoot/../common/common.psm1
+
 $ccfName = $persona + "-ccf"
 $ccf = (az confidentialledger managedccfs list `
     --resource-group $resourceGroup `
     --query "[?name=='$ccfName']") | ConvertFrom-Json
 if ($null -eq $ccf)
 {
-    Write-Host "$($PSStyle.Formatting.CustomTableHeaderLabel)" `
+    Write-Log OperationStarted `
     "Creating consortium '$ccfName' in resource group '$resourceGroup'..."
 
     $memberCert = $secretDir + "/"+ $persona + "_cert.pem" # Created previously via the keygenerator-sh command.
@@ -34,12 +36,12 @@ if ($null -eq $ccf)
         --name $ccfName `
         --query "properties.appUri" `
         --output tsv)
-    Write-Host "$($PSStyle.Formatting.FormatAccent)" `
+    Write-Log OperationCompleted `
         "Created consortium '$ccfName' ('$ccfEndpoint')."
 }
 else {
     $ccfEndpoint = $ccf.properties.appUri
-    Write-Host "$($PSStyle.Formatting.Warning)" `
+    Write-Log Warning `
         "Connecting to consortium '$ccfName' ('$ccfEndpoint')."
 }
 
@@ -53,7 +55,7 @@ az cleanroom governance client deploy `
 # Accept the invitation and becomes an active member in the consortium.
 az cleanroom governance member activate --governance-client $cgsClient
 
-Write-Host "$($PSStyle.Formatting.FormatAccent)" `
+Write-Log OperationCompleted `
     "Joined consortium '$ccfEndpoint' and deployed CGS client '$cgsClient'."
 
 # Deploy governance service on the CCF instance.
@@ -61,5 +63,5 @@ az cleanroom governance service deploy --governance-client $cgsClient
 
 # Share the CCF endpoint details.
 $ccfEndpoint | Out-File "$ccfConfig"
-Write-Host "$($PSStyle.Formatting.FormatAccent)" `
+Write-Log OperationCompleted `
     "CCF configuration written to '$ccfConfig'."

@@ -16,7 +16,9 @@ param(
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
-Write-Host "$($PSStyle.Formatting.CustomTableHeaderLabel)" `
+Import-Module $PSScriptRoot/../common/common.psm1
+
+Write-Log OperationStarted `
     "Deploying clean room for contract '$contractId'..." 
 
 # Get the agreed upon ARM template for deployment.
@@ -31,6 +33,6 @@ az deployment group create `
     --name $cleanRoomName `
     --template-file "$artefactsDir/accepted-deployment-template.json"
 
-Write-Host "$($PSStyle.Formatting.FormatAccent)" `
+Write-Log OperationCompleted `
     "Deployed clean room '$cleanRoomName' for contract '$contractId' to '$resourceGroup'." 
 

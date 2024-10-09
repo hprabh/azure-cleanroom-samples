@@ -16,7 +16,9 @@ param(
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
-Write-Host "$($PSStyle.Formatting.CustomTableHeaderLabel)" `
+Import-Module $PSScriptRoot/../common/common.psm1
+
+Write-Log OperationStarted `
     "Generating deployment artefacts for contract '$contractId' in '$artefactsDir'..." 
 
 mkdir -p $artefactsDir
@@ -26,7 +28,7 @@ az cleanroom governance deployment generate `
     --security-policy-creation-option $securityPolicy `
     --output-dir $artefactsDir
 
-Write-Host "$($PSStyle.Dim)$($PSStyle.Italic)" `
+Write-Log OperationStarted `
     "Proposing deployment artefacts for contract '$contractId' to the consortium..." 
 
 az cleanroom governance deployment template propose `
@@ -52,6 +54,6 @@ az cleanroom governance contract runtime-option propose `
     --contract-id $contractId `
     --governance-client $cgsClient
 
-Write-Host "$($PSStyle.Formatting.FormatAccent)" `
+Write-Log OperationCompleted `
     "Proposed deployment artefacts for contract '$contractId' to the consortium." 
 

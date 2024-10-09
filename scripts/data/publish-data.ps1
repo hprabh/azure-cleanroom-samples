@@ -24,13 +24,15 @@ param(
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
+Import-Module $PSScriptRoot/../common/common.psm1
+
 if ($sa -eq "")
 {
     $initResult = Get-Content $environmentConfig | ConvertFrom-Json
     $sa = $initResult.sa.id
 }
 
-Write-Host "$($PSStyle.Formatting.CustomTableHeaderLabel)" `
+Write-Log OperationStarted `
     "Creating data stores for '$demo' demo in '$sa'..."
 
 if (Test-Path -Path $datasourcePath)
@@ -39,7 +41,7 @@ if (Test-Path -Path $datasourcePath)
     foreach ($dir in $dirs)
     {
         $datastoreName = "$demo-$persona-$dir".ToLower()
-        Write-Host "$($PSStyle.Dim)$($PSStyle.Italic)" `
+        Write-Log Verbose `
             "Enumerated datasink '$datastoreName' in '$datasourcePath'..."
 
         az cleanroom datastore add `
@@ -51,7 +53,7 @@ if (Test-Path -Path $datasourcePath)
             --backingstore-id $sa
         $datastorePath = "$datastoreDir/$datastoreName"
         mkdir -p $datastorePath
-        Write-Host "$($PSStyle.Formatting.FormatAccent)" `
+        Write-Log OperationCompleted `
             "Created data store '$datastoreName' backed by '$sa'."
 
         cp -r $datasourcePath/$dir/* $datastorePath
@@ -59,14 +61,14 @@ if (Test-Path -Path $datasourcePath)
             --name $datastoreName `
             --config $datastoreConfig `
             --src $datastorePath
-        Write-Host "$($PSStyle.Formatting.FormatAccent)" `
+        Write-Log OperationCompleted `
             "Published data from '$datasourcePath/$dir' as data store '$datastoreName'."
     }
 }
 else
 {
-    Write-Host "$($PSStyle.Formatting.ErrorAccent)" `
-        "No datasource required for persona '$persona' in demo '$demo'."
+    Write-Log Warning `
+        "No datasource available for persona '$persona' in demo '$demo'."
 }
 
 if (Test-Path -Path $datasinkPath)
@@ -75,7 +77,7 @@ if (Test-Path -Path $datasinkPath)
     foreach ($dir in $dirs)
     {
         $datastoreName = "$demo-$persona-$dir".ToLower()
-        Write-Host "$($PSStyle.Dim)$($PSStyle.Italic)" `
+        Write-Log Verbose `
             "Enumerated datasink '$datastoreName' in '$datasinkPath'..."
 
         az cleanroom datastore add `
@@ -87,12 +89,12 @@ if (Test-Path -Path $datasinkPath)
             --backingstore-id $sa
         $datastorePath = "$datastoreDir/$datastoreName"
         mkdir -p $datastorePath
-        Write-Host "$($PSStyle.Formatting.FormatAccent)" `
+        Write-Log OperationCompleted `
             "Created data store '$datastoreName' backed by '$sa'."
     }
 }
 else
 {
-    Write-Host "$($PSStyle.Formatting.ErrorAccent)" `
-        "No datasink required for persona '$persona' in demo '$demo'."
+    Write-Log Warning `
+        "No datasink available for persona '$persona' in demo '$demo'."
 }
