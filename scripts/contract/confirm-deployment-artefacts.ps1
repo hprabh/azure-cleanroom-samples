@@ -54,6 +54,21 @@ az cleanroom governance proposal vote `
 Write-Log OperationCompleted `
     "Accepted deployment policy for '$contractId'."
 
+# Vote on the proposed CA enable.
+$proposalId = az cleanroom governance ca show `
+    --contract-id $contractId `
+    --governance-client $cgsClient `
+    --query "proposalIds[0]" `
+    --output tsv
+Write-Log Verbose `
+    "Accepting CA proposal '$proposalId'..."
+az cleanroom governance proposal vote `
+    --proposal-id $proposalId `
+    --action accept `
+    --governance-client $cgsClient
+Write-Log OperationCompleted `
+    "Accepted CA for '$contractId'."
+
 # Vote on the enable logging proposal.
 $proposalId = az cleanroom governance contract runtime-option get `
     --option logging `

@@ -30,7 +30,7 @@ $PSNativeCommandUseErrorActionPreference = $true
 Import-Module $PSScriptRoot/../common/common.psm1
 
 Write-Log OperationStarted `
-    "Granting access to resources required for '$demo' demo to deployments implementing " `
+    "Granting access to resources required for '$demo' demo to deployments implementing" `
     "contract '$contractId'..." 
 
 Import-Module $PSScriptRoot/../azure-helpers/azure-helpers.psm1 -Force -DisableNameChecking
@@ -56,7 +56,7 @@ $managedIdentity = $contractConfigResult.mi
 # Cleanroom needs both read/write permissions on storage account, hence assigning Storage Blob Data Contributor.
 $role = "Storage Blob Data Contributor"
 Write-Log Verbose `
-    "Assigning permission for '$role' to '$($managedIdentity.name)' on " `
+    "Assigning permission for '$role' to '$($managedIdentity.name)' on" `
     "storage account '$($environmentConfigResult.sa.name)'"
 az role assignment create `
     --role "Storage Blob Data Contributor" `
@@ -76,12 +76,12 @@ if ($kekVault.type -eq "Microsoft.KeyVault/managedHSMs") {
             --role $role) | ConvertFrom-Json
     if ($roleAssignment.Length -eq 1) {
         Write-Log Warning `
-            "Skipping assignment as '$role' permission already exists for " `
+            "Skipping assignment as '$role' permission already exists for" `
             "'$($managedIdentity.name)' on mHSM '$($kekVault.name)'."
     }
     else {
         Write-Log Verbose `
-            "Assigning permissions for '$role' to '$($managedIdentity.name)' on " `
+            "Assigning permissions for '$role' to '$($managedIdentity.name)' on" `
             "mHSM '$($kekVault.name)'"
         az keyvault role assignment create `
             --role $role `
@@ -101,12 +101,12 @@ elseif ($kekVault.type -eq "Microsoft.KeyVault/vaults") {
             --role $role) | ConvertFrom-Json
     if ($roleAssignment.Length -eq 1) {
         Write-Log Warning `
-            "Skipping assignment as '$role' permission already exists for " `
+            "Skipping assignment as '$role' permission already exists for" `
             "'$($managedIdentity.name)' on key vault '$($kekVault.name)'."
     }
     else {
         Write-Log Verbose `
-            "Assigning permissions for '$role' to '$($managedIdentity.name)' on " `
+            "Assigning permissions for '$role' to '$($managedIdentity.name)' on" `
             "key vault '$($kekVault.name)'"
         az role assignment create `
             --role $role `
@@ -121,7 +121,7 @@ elseif ($kekVault.type -eq "Microsoft.KeyVault/vaults") {
 $dekVault = $environmentConfigResult.dek.kv
 $role = "Key Vault Secrets User"
 Write-Log Verbose `
-    "Assigning permission for '$role' to '$($managedIdentity.name)' on " `
+    "Assigning permission for '$role' to '$($managedIdentity.name)' on" `
     "storage account '$($dekVault.name)'"
 az role assignment create `
     --role $role `
@@ -226,7 +226,7 @@ else {
 # Setup federated credential on managed identity.
 #
 Write-Log OperationStarted `
-    "Setting up federation on managed identity '$($managedIdentity.name)' for " `
+    "Setting up federation on managed identity '$($managedIdentity.name)' for" `
     "issuer '$issuerUrl' and subject '$contractId'..."
 az identity federated-credential create `
     --name "$contractId-federation" `
@@ -242,5 +242,5 @@ Write-Log Verbose `
 Start-Sleep -Seconds $sleepTime
 
 Write-Log OperationCompleted `
-    "Granted access to resources required for '$demo' demo to deployments implementing " `
+    "Granted access to resources required for '$demo' demo to deployments implementing" `
     "contract '$contractId' through federation on managed identity '$($managedIdentity.name)'." 

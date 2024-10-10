@@ -28,7 +28,7 @@ if (-not (("litware") -contains $persona))
 
 $configResult = Get-Content $contractConfig | ConvertFrom-Json
 Write-Log OperationStarted `
-    "Adding application details for '$persona' in the '$demo' demo to " `
+    "Adding application details for '$persona' in the '$demo' demo to" `
     "'$($configResult.contractFragment)'..."
 
 $inline_code = $(cat $PSScriptRoot/application/main.go | base64 -w 0)

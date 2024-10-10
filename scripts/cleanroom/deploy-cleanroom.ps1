@@ -19,8 +19,21 @@ $PSNativeCommandUseErrorActionPreference = $true
 Import-Module $PSScriptRoot/../common/common.psm1
 
 Write-Log OperationStarted `
-    "Deploying clean room for contract '$contractId'..." 
+    "Generating CA cert for contract '$contractId'..." 
+az cleanroom governance ca generate-key `
+    --contract-id $contractId `
+    --governance-client $cgsClient
+# Get the CA cert generated for the deployment.
+az cleanroom governance ca show `
+    --contract-id $contractId `
+    --governance-client $cgsClient `
+    --query "caCert" `
+    --output tsv > $artefactsDir/$cleanRoomName-ca.crt
+Write-Log OperationCompleted `
+    "Generated CA cert for contract '$contractId': '$artefactsDir/$cleanRoomName-ca.crt'." 
 
+Write-Log OperationStarted `
+    "Deploying clean room for contract '$contractId'..." 
 # Get the agreed upon ARM template for deployment.
 (az cleanroom governance deployment template show `
     --contract-id $contractId `

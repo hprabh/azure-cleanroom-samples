@@ -10,8 +10,11 @@ enum LogLevel {
 
 function Write-Log {
     param (
+        [Parameter(Mandatory, Position=0)]
         [LogLevel] $Level,
-        [string] $Message
+
+        [Parameter(Position=1, ValueFromRemainingArguments)]
+        [string[]]$Remaining
     )
 
     $formatting = switch ($Level)
@@ -26,13 +29,15 @@ function Write-Log {
         default { "$($PSStyle.Reset)" }
     }
 
-    Write-Host "$formatting$Message$($PSStyle.Reset)"
+    Write-Host "$formatting$Remaining$($PSStyle.Reset)"
 }
 
 function Test-Log {
     $levels = [LogLevel].GetEnumValues()
     foreach ($level in $levels)
     {
-        Write-Log $level "Logging '$level'"
+        Write-Log $level `
+            "Logging '$level'" `
+            "for" "testing..."
     }
 }

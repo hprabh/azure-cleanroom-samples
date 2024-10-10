@@ -103,7 +103,7 @@ if ($createContainer)
         --name $containerName `
         -it $imageName
     Write-Log OperationCompleted `
-        "Created container '$containerName' to start samples environment for " `
+        "Created container '$containerName' to start samples environment for" `
         "'$persona'. Environment will be using resource group '$resourceGroup'."
 }
 

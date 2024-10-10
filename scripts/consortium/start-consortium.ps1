@@ -23,7 +23,7 @@ $ccf = (az confidentialledger managedccfs list `
 if ($null -eq $ccf)
 {
     Write-Log OperationStarted `
-    "Creating consortium '$ccfName' in resource group '$resourceGroup'..."
+        "Creating consortium '$ccfName' in resource group '$resourceGroup'..."
 
     $memberCert = $secretDir + "/"+ $persona + "_cert.pem" # Created previously via the keygenerator-sh command.
     az confidentialledger managedccfs create `

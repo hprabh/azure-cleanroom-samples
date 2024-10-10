@@ -41,6 +41,11 @@ az cleanroom governance deployment policy propose `
     --contract-id $contractId `
     --governance-client $cgsClient
 
+# Propose enabling CA cert for usage during cleanroom execution.
+az cleanroom governance ca propose-enable `
+    --contract-id $contractId `
+    --governance-client $cgsClient
+
 # Propose enabling log and telemetry collection during cleanroom execution.
 az cleanroom governance contract runtime-option propose `
     --option logging `

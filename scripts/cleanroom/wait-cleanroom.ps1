@@ -51,6 +51,7 @@ do {
         if ($codeLauncherState.state -eq "Running") {
             Write-Log Verbose `
                 "$(Get-TimeStamp) Clean room application is running..."
+            exit 0
         }
         elseif ($codeLauncherState.state -eq "Terminated") {
             Write-Log OperationStarted `
