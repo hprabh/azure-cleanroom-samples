@@ -33,7 +33,7 @@ if (Test-Path -Path $datasinkPath)
             --dst $datastoreDir
         $dataDir = "$datastoreDir/$datastoreName"
         Write-Log OperationCompleted `
-            "Downloaded data for datasink '$persona-$dir' ($datastoreName) " `
+            "Downloaded data for datasink '$persona-$dir' ($datastoreName)" `
             "to '$dataDir'."
     }
 }

@@ -26,8 +26,8 @@ $contractConfigResult = Get-Content $contractConfig | ConvertFrom-Json
 $environmentConfigResult = Get-Content $environmentConfig | ConvertFrom-Json
 
 Write-Log OperationStarted `
-    "Adding telemetry details for '$persona' in the '$demo' demo to " `
-    "'$($configResult.contractFragment)'..."
+    "Adding telemetry details for '$persona' in the '$demo' demo to" `
+    "'$($contractConfigResult.contractFragment)'..."
 
 # $result below refers to the output of the prepare-resources.ps1 that was run earlier.
 az cleanroom config set-logging `

@@ -27,7 +27,7 @@ $contractConfigResult = Get-Content $contractConfig | ConvertFrom-Json
 $environmentConfigResult = Get-Content $environmentConfig | ConvertFrom-Json
 
 Write-Log OperationStarted `
-    "Adding datasources and datasinks for '$persona' in the '$demo' demo to " `
+    "Adding datasources and datasinks for '$persona' in the '$demo' demo to" `
     "'$($contractConfigResult.contractFragment)'..."
 
 if (Test-Path -Path $datasourcePath)

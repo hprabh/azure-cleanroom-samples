@@ -2,8 +2,8 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$contractId,
 
-    [ValidateSet("cached", "generate", "generate-debug", "allow-all")]
-    [string]$securityPolicy = "cached",
+    [ValidateSet("cached", "cached-debug", "generate", "generate-debug", "allow-all")]
+    [string]$securityPolicy = "cached-debug",
 
     [string]$cgsClient = "$env:PERSONA-client",
 

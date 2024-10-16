@@ -1,5 +1,5 @@
 param(
-    [string]$image = "cleanroomsamples.azurecr.io/azure-cleanroom-samples/demos/analytics@sha256:303f94478f7908c94958d1c3651a754f493e54cac23e39b9b2b096d7e8931387",
+    [string]$image = "cleanroomsamples.azurecr.io/azure-cleanroom-samples/demos/analytics:latest",
     [string]$endpointPolicy = "",
 
     [ValidateSet("litware")]

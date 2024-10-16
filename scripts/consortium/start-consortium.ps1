@@ -7,7 +7,7 @@ param(
     [string]$publicDir = "$samplesRoot/demo-resources.public",
 
     [string]$cgsClient = "$persona-client",
-    [string]$ccfConfig = "$publicDir/ccfEndpoint"
+    [string]$ccfEndpoint = "$publicDir/ccfEndpoint"
 )
 
 #https://learn.microsoft.com/en-us/powershell/scripting/learn/experimental-features?view=powershell-7.4#psnativecommanderroractionpreference
@@ -62,6 +62,6 @@ Write-Log OperationCompleted `
 az cleanroom governance service deploy --governance-client $cgsClient
 
 # Share the CCF endpoint details.
-$ccfEndpoint | Out-File "$ccfConfig"
+$ccfEndpoint | Out-File "$ccfEndpoint"
 Write-Log OperationCompleted `
-    "CCF configuration written to '$ccfConfig'."
+    "CCF configuration written to '$ccfEndpoint'."

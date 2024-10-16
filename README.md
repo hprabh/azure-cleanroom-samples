@@ -600,8 +600,10 @@ $env:AZCLI_CLEANROOM_SIDECARS_VERSIONS_DOCUMENT_URL = "localhost:5001/sidecar-di
 > 
 > The command generates these artefacts and proposes them to the governance service:
 > - The **_deployment_** proposal contains the ARM template (`cleanroom-arm-template.json`) which can be deployed for instantiating the clean room, and
-> - The **_policy_** proposal contains the clean room policy (`cleanroom-governance-policy.json`)  which identifies this clean room when its under execution
-> 
+> - The **_policy_** proposal contains the clean room policy (`cleanroom-governance-policy.json`)  which identifies this clean room when it is executing
+> - The **_enable CA_** proposal to provision a CA cert for HTTPS calls that uniquely identifies this clean room when it is executing
+>
+>
 > Proposals for enabling log collection are also submitted as part of this step.
 
 > [!TIP]
@@ -671,7 +673,7 @@ Run the following script to wait for the cleanroom to exit.
 
 
 ```powershell
-./scripts/cleanroom/watch-cleanroom.ps1 -contractId $contractId
+./scripts/cleanroom/wait-cleanroom.ps1 -contractId $contractId
 ```
 
 
@@ -681,9 +683,16 @@ As part of the execution, the cleanroom application may write out any computed o
 
 
 ```powershell
-./scripts/data/copy-data.ps1 -demo $demo
+./scripts/document/register-documents.ps1 -demo $demo -contractId $contractId
+./scripts/document/confirm-documents.ps1 -contractId $contractId
 ```
 
+Run the following script to wait for the cleanroom to exit.
+
+<!--TODO (phanic): Get rid of this step?-->
+```powershell
+./scripts/data/copy-data.ps1 -demo $demo
+```
 
 This command downloads all the files from the storage container into a local folder. The application specific output can be viewed by running the following command:
 

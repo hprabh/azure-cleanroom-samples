@@ -75,7 +75,7 @@ def get_document_from_cgs(queryId):
     uri = f"{governanceEndpoint}/documents/{queryId}"
 
     logging.info(f"Sending query request to uri: {uri}")
-    resp = requests.get(
+    resp = requests.post(
         url=uri,
         headers={"Content-Type": "application/json"},
     )

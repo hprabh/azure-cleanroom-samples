@@ -4,7 +4,13 @@ param(
 
     [string]$resourceGroup = "$env:RESOURCE_GROUP",
 
-    [string]$cleanRoomName = "cleanroom-$contractId"
+    [string]$cleanRoomName = "cleanroom-$contractId",
+
+    [string]$samplesRoot = "/home/samples",
+    [string]$publicDir = "$samplesRoot/demo-resources.public",
+    [string]$cleanroomEndpoint = "$publicDir/$cleanRoomName.endpoint",
+
+    [switch]$job
 )
 
 #https://learn.microsoft.com/en-us/powershell/scripting/learn/experimental-features?view=powershell-7.4#psnativecommanderroractionpreference
@@ -51,7 +57,17 @@ do {
         if ($codeLauncherState.state -eq "Running") {
             Write-Log Verbose `
                 "$(Get-TimeStamp) Clean room application is running..."
-            exit 0
+            if ($false -eq $job)
+            {
+                Write-Log OperationCompleted `
+                    "$(Get-TimeStamp) Clean room application started successfully."
+
+                $ccrIP =  $cleanroom | jq -r ".ipAddress.ip"
+                $ccrIP | Out-File "$cleanroomEndpoint"
+                Write-Log OperationCompleted `
+                    "CCR endpoint details {IP: '$ccrIp'} written to '$cleanroomEndpoint'."
+                exit 0
+            }
         }
         elseif ($codeLauncherState.state -eq "Terminated") {
             Write-Log OperationStarted `

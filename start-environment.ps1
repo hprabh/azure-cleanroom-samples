@@ -25,7 +25,7 @@ function Get-Confirmation {
     )
 
     do {
-        $choice = Read-Host "$($PSStyle.Bold)$Message ('$YesLabel'/'$NoLabel') :$($PSStyle.Reset)"
+        $choice = Read-Host "$($PSStyle.Bold)$Message ('$YesLabel'/'$NoLabel')$($PSStyle.Reset)"
         $choice = $choice.ToLower()
         switch ($choice) {
             $YesLabel.ToLower() {
