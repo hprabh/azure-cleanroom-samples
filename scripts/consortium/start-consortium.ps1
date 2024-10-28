@@ -31,23 +31,23 @@ if ($null -eq $ccf)
         --resource-group $resourceGroup `
         --location "southcentralus" `
         --members "[{certificate:'$memberCert',identifier:'$persona'}]"
-    $ccfEndpoint = (az confidentialledger managedccfs show `
+    $ccfUri = (az confidentialledger managedccfs show `
         --resource-group $resourceGroup `
         --name $ccfName `
         --query "properties.appUri" `
         --output tsv)
     Write-Log OperationCompleted `
-        "Created consortium '$ccfName' ('$ccfEndpoint')."
+        "Created consortium '$ccfName' ('$ccfUri')."
 }
 else {
-    $ccfEndpoint = $ccf.properties.appUri
+    $ccfUri = $ccf.properties.appUri
     Write-Log Warning `
-        "Connecting to consortium '$ccfName' ('$ccfEndpoint')."
+        "Connecting to consortium '$ccfName' ('$ccfUri')."
 }
 
 # Deploy client-side containers to interact with the governance service as the first member.
 az cleanroom governance client deploy `
-    --ccf-endpoint $ccfEndpoint `
+    --ccf-endpoint $ccfUri `
     --signing-cert $secretDir/$($persona)_cert.pem `
     --signing-key $secretDir/$($persona)_privk.pem `
     --name $cgsClient
@@ -56,12 +56,12 @@ az cleanroom governance client deploy `
 az cleanroom governance member activate --governance-client $cgsClient
 
 Write-Log OperationCompleted `
-    "Joined consortium '$ccfEndpoint' and deployed CGS client '$cgsClient'."
+    "Joined consortium '$ccfUri' and deployed CGS client '$cgsClient'."
 
 # Deploy governance service on the CCF instance.
 az cleanroom governance service deploy --governance-client $cgsClient
 
 # Share the CCF endpoint details.
-$ccfEndpoint | Out-File "$ccfEndpoint"
+$ccfUri | Out-File "$ccfEndpoint"
 Write-Log OperationCompleted `
     "CCF configuration written to '$ccfEndpoint'."
