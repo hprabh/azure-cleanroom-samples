@@ -12,8 +12,8 @@ param(
 
     [string]$contractConfig = "$privateDir/$resourceGroup-$demo.generated.json",
     [string]$environmentConfig = "$privateDir/$resourceGroup.generated.json",
-    [string]$datastoreConfig = "$privateDir/datastores.config",
-    [string]$keysDir = "$secretDir/keys"
+    [string]$secretstoreConfig = "$privateDir/secretstores.config",
+    [string]$datastoreConfig = "$privateDir/datastores.config"
 )
 
 #https://learn.microsoft.com/en-us/powershell/scripting/learn/experimental-features?view=powershell-7.4#psnativecommanderroractionpreference
@@ -33,10 +33,12 @@ Write-Log OperationStarted `
 az cleanroom config set-logging `
     --cleanroom-config $contractConfigResult.contractFragment `
     --datastore-config $datastoreConfig `
-    --datastore-keystore $keysDir `
     --storage-account $environmentConfigResult.sa.id `
     --identity "$persona-identity" `
-    --key-vault $environmentConfigResult.dek.kv.id `
+    --secretstore-config $secretStoreConfig `
+    --datastore-secret-store $persona-local-store `
+    --dek-secret-store $persona-dek-store `
+    --kek-secret-store $persona-kek-store `
     --encryption-mode CPK
 Write-Log OperationCompleted `
     "Added application telemetry details."
@@ -44,10 +46,12 @@ Write-Log OperationCompleted `
 az cleanroom config set-telemetry `
     --cleanroom-config $contractConfigResult.contractFragment `
     --datastore-config $datastoreConfig `
-    --datastore-keystore $keysDir `
     --storage-account $environmentConfigResult.sa.id `
     --identity "$persona-identity" `
-    --key-vault $environmentConfigResult.dek.kv.id `
+    --secretstore-config $secretStoreConfig `
+    --datastore-secret-store $persona-local-store `
+    --dek-secret-store $persona-dek-store `
+    --kek-secret-store $persona-kek-store `
     --encryption-mode CPK
 Write-Log OperationCompleted `
     "Added infrastructure telemetry details."

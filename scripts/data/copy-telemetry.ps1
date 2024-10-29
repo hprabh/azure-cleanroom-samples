@@ -8,7 +8,6 @@ param(
 
     [string]$samplesRoot = "/home/samples",
     [string]$privateDir = "$samplesRoot/demo-resources.private",
-    [string]$secretDir = "$samplesRoot/demo-resources.secret",
 
     [string]$datastoreDir = "$privateDir/datastores",
     [string]$contractConfig = "$privateDir/$resourceGroup-$demo.generated.json",

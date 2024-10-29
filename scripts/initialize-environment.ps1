@@ -17,7 +17,7 @@ param(
 
     [string]$environmentConfig = "$privateDir/$resourceGroup.generated.json",
     [string]$secretstoreConfig = "$privateDir/secretstores.config",
-    [string]$localSecretStore = "$secretDir/$persona-secretstore-local"
+    [string]$localSecretStore = "$secretDir/$persona-local-store"
 )
 
 #https://learn.microsoft.com/en-us/powershell/scripting/learn/experimental-features?view=powershell-7.4#psnativecommanderroractionpreference

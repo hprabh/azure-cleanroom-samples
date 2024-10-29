@@ -10,7 +10,6 @@ param(
     [string]$privateDir = "$samplesRoot/demo-resources.private",
     [string]$publicDir = "$samplesRoot/demo-resources.public",
 
-    [string]$environmentConfig = "$privateDir/$resourceGroup.generated.json",
     [string]$contractConfig = "$privateDir/$resourceGroup-$demo.generated.json",
     [string]$contractFragment = "$publicDir/$persona-$demo.config",
 
@@ -24,15 +23,9 @@ $PSNativeCommandUseErrorActionPreference = $true
 Import-Module $PSScriptRoot/../common/common.psm1
 Import-Module $PSScriptRoot/../azure-helpers/azure-helpers.psm1 -Force -DisableNameChecking
 
-$initResult = Get-Content $environmentConfig | ConvertFrom-Json
-
 Write-Log OperationStarted `
     "Initializing cleanroom specification '$contractFragment'..." 
 az cleanroom config init `
-    --cleanroom-config $contractFragment
-az cleanroom config set-kek `
-    --kek-key-vault $initResult.kek.kv.id `
-    --maa-url $initResult.maa_endpoint `
     --cleanroom-config $contractFragment
 
 if ($managedIdentityName -eq "")

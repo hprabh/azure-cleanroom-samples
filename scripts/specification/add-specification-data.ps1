@@ -12,6 +12,7 @@ param(
 
     [string]$contractConfig = "$privateDir/$resourceGroup-$demo.generated.json",
     [string]$environmentConfig = "$privateDir/$resourceGroup.generated.json",
+    [string]$secretstoreConfig = "$privateDir/secretstores.config",
     [string]$datastoreConfig = "$privateDir/datastores.config",
     [string]$datasourcePath = "$demosRoot/$demo/datasource/$persona",
     [string]$datasinkPath = "$demosRoot/$demo/datasink/$persona"
@@ -42,7 +43,9 @@ if (Test-Path -Path $datasourcePath)
             --name $datasourceName `
             --datastore-config $datastoreConfig `
             --datastore-name $datastoreName `
-            --key-vault $environmentConfigResult.dek.kv.id `
+            --secretstore-config $secretStoreConfig `
+            --dek-secret-store $persona-dek-store `
+            --kek-secret-store $persona-kek-store `
             --identity "$persona-identity"
         Write-Log OperationCompleted `
             "Added datasource '$datasourceName' ($datastoreName)."
@@ -66,7 +69,9 @@ if (Test-Path -Path $datasinkPath)
             --name $datasinkName `
             --datastore-config $datastoreConfig `
             --datastore-name $datastoreName `
-            --key-vault $environmentConfigResult.dek.kv.id `
+            --secretstore-config $secretStoreConfig `
+            --dek-secret-store $persona-dek-store `
+            --kek-secret-store $persona-kek-store `
             --identity "$persona-identity"
         Write-Log OperationCompleted `
             "Added datasink '$datasinkName' ($datastoreName)."

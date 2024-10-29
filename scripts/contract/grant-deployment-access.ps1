@@ -17,7 +17,7 @@ param(
     [string]$oidcContainerName = "cgs-oidc",
     [string]$ccfEndpoint = (Get-Content "$publicDir/ccfEndpoint"),
 
-    [string]$keyStore = "$secretDir/keys",
+    [string]$secretstoreConfig = "$privateDir/secretstores.config",
     [string]$datastoreConfig = "$privateDir/datastores.config",
     [string]$environmentConfig = "$privateDir/$resourceGroup.generated.json",
     [string]$contractConfig = "$privateDir/$resourceGroup-$demo.generated.json"
@@ -45,7 +45,7 @@ az cleanroom config wrap-deks `
     --contract-id $contractId `
     --cleanroom-config $contractConfigResult.contractFragment `
     --datastore-config $datastoreConfig `
-    --key-store $keyStore `
+    --secretstore-config $secretStoreConfig `
     --governance-client $cgsClient
 
 #

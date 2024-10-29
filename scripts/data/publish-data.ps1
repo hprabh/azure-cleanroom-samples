@@ -13,7 +13,7 @@ param(
     [string]$sa = "",
 
     [string]$environmentConfig = "$privateDir/$resourceGroup.generated.json",
-    [string]$keyStore = "$secretDir/keys",
+    [string]$secretstoreConfig = "$privateDir/secretstores.config",
     [string]$datastoreConfig = "$privateDir/datastores.config",
     [string]$datastoreDir = "$privateDir/datastores",
     [string]$datasourcePath = "$demosRoot/$demo/datasource/$persona",
@@ -47,7 +47,8 @@ if (Test-Path -Path $datasourcePath)
         az cleanroom datastore add `
             --name $datastoreName `
             --config $datastoreConfig `
-            --keystore $keyStore `
+            --secretstore-config $secretStoreConfig `
+            --secretstore $persona-local-store `
             --encryption-mode CPK `
             --backingstore-type Azure_BlobStorage `
             --backingstore-id $sa
@@ -83,7 +84,8 @@ if (Test-Path -Path $datasinkPath)
         az cleanroom datastore add `
             --name $datastoreName `
             --config $datastoreConfig `
-            --keystore $keyStore `
+            --secretstore-config $secretStoreConfig `
+            --secretstore $persona-local-store `
             --encryption-mode CPK `
             --backingstore-type Azure_BlobStorage `
             --backingstore-id $sa
