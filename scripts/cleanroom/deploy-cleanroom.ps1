@@ -5,6 +5,7 @@ param(
     [string]$resourceGroup = "$env:RESOURCE_GROUP",
     [string]$cgsClient = "$env:PERSONA-client",
 
+    [string]$location = "westeurope",
     [string]$samplesRoot = "/home/samples",
     [string]$privateDir = "$samplesRoot/demo-resources.private",
     [string]$artefactsDir = "$privateDir/$contractId-artefacts",
@@ -44,7 +45,8 @@ Write-Log OperationStarted `
 az deployment group create `
     --resource-group $resourceGroup `
     --name $cleanRoomName `
-    --template-file "$artefactsDir/accepted-deployment-template.json"
+    --template-file "$artefactsDir/accepted-deployment-template.json" `
+    --parameters location=$location
 
 Write-Log OperationCompleted `
     "Deployed clean room '$cleanRoomName' for contract '$contractId' to '$resourceGroup'." 

@@ -576,6 +576,8 @@ The collaborating parties can now query the governance service to get the propos
 
 <!--TODO (phanic): Add query to figure out the contract ID by hitting CGS.-->
 ```powershell
+$contractId = "<contractId>" # E.g. "collab-cleanroomhello-job-8a106fb6"
+
 ./scripts/contract/confirm-contract.ps1 -contractId $contractId
 ```
 
