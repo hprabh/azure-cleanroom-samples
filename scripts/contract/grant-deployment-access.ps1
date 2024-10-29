@@ -198,7 +198,7 @@ else {
     Write-Log Verbose `
         "Uploading jwks to container '$oidcContainerName' in '$oidcsa'..."
     $url = "$ccfEndpoint/app/oidc/keys"
-    curl -s -k $url | jq | Out-File $privateDir/jwks.json
+    curl -sL -k $url | jq | Out-File $privateDir/jwks.json
     az storage blob upload `
         --container-name $oidcContainerName `
         --file $privateDir/jwks.json `
