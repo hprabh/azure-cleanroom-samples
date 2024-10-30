@@ -81,6 +81,11 @@ do {
             else {
                 Write-Log OperationCompleted `
                     "$(Get-TimeStamp) Clean room application exited successfully."
+
+                $ccrIP =  $cleanroom | jq -r ".ipAddress.ip"
+                $ccrIP | Out-File "$cleanroomEndpoint"
+                Write-Log OperationCompleted `
+                    "CCR endpoint details {IP: '$ccrIp'} written to '$cleanroomEndpoint'."
                 exit 0
             }
         }

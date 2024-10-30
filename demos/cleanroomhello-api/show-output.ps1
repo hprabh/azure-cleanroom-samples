@@ -13,6 +13,7 @@ param(
     [string]$cleanroomEndpoint = (Get-Content "$publicDir/$cleanRoomName.endpoint"),
 
     [string]$datastoreDir = "$privateDir/datastores",
+    [string]$datastoreConfig = "$privateDir/datastores.config",
 
     [string]$demo = "$(Split-Path $PSScriptRoot -Leaf)",
     [string]$datasinkPath = "$demosRoot/$demo/datasink/$persona",

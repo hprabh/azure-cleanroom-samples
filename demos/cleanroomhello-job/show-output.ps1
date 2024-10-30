@@ -13,6 +13,7 @@ param(
     [string]$cleanroomEndpoint = (Get-Content "$publicDir/$cleanRoomName.endpoint"),
 
     [string]$datastoreDir = "$privateDir/datastores",
+    [string]$datastoreConfig = "$privateDir/datastores.config",
 
     [string]$demo = "$(Split-Path $PSScriptRoot -Leaf)",
     [string]$datasinkPath = "$demosRoot/$demo/datasink/$persona",
@@ -51,19 +52,31 @@ foreach ($dir in $dirs)
 {
     $datasinkName = "$persona-$dir".ToLower()
     Write-Log Verbose `
-        "Enumerated datasink '$datasinkName' in '$datasinkPath'..."
+        "Enumerated datasink '$datasinkName' in '$datasinkPath'."
 
     $datastoreName = "$demo-$persona-$dir".ToLower()
+    $datastoreFolder = "$datastoreDir/$datastoreName"
+    Write-Log OperationStarted `
+        "Downloading data for datasink '$datasinkName' ('$datastoreName') to" `
+        "'$datastoreFolder'..."
+    az cleanroom datastore download `
+        --name $datastoreName `
+        --config $datastoreConfig `
+        --dst $datastoreDir
+    Write-Log OperationCompleted `
+        "Downloaded data for datasink '$datasinkName' ('$datastoreName') to" `
+        "'$datastoreFolder'."
+
     # TODO (phanic): Understand why this is being copied into a nested folder.
-    $datastoreFolder = "$datastoreDir/$datastoreName/**"
+    $datastoreFolder = "$datastoreFolder/**"
     Write-Log Information `
-        "Output from datastore '$datastoreName':"
+        "Output for datasink '$datasinkName' ('$datastoreName'):"
     Write-Log Verbose `
         "-----BEGIN OUTPUT-----" `
         "$($PSStyle.Reset)"
     gzip -c -d $datastoreFolder/*.gz
     Write-Log Verbose `
-        "-----END OUTPUT-----"
+        "$([environment]::NewLine)-----END OUTPUT-----"
 }
 
 Write-Log OperationCompleted `
