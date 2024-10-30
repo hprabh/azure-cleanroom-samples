@@ -46,6 +46,17 @@ function Get-Confirmation {
     return ($response -eq $YesLabel.ToLower())
 }
 
+docker build -f $dockerFileDir/Dockerfile.azure-cleanroom-samples-otelcollector -t $imageName-otelcollector $dockerFileDir
+
+$telemetryPath = "$pwd/demo-resources/resources.telemetry"
+mkdir -p $telemetryPath
+$env:TELEMETRY_FOLDER = $telemetryPath
+$projectName = "$imageName-telemetry"
+docker compose -p $projectName -f $dockerFileDir/telemetry/docker-compose.yaml up -d --remove-orphans
+$aspirePort = docker compose -p $projectName port "aspire" 18888
+Write-Log OperationCompleted `
+    "Aspire dashboard deployed at http://localhost:$aspirePort."
+
 $containerName = "$persona-shell"
 $container = (docker container ls -a --filter "name=^$containerName$" --format 'json') | ConvertFrom-Json
 if ($null -eq $container)
@@ -77,7 +88,7 @@ if ($createContainer)
         "Creating samples environment '$containerName' using image '$imageName'..." 
 
     # TODO (phanic) Cut across to prebuilt docker image once we setup the repository.
-    $dockerArgs = "image build -t $imageName -f $dockerFileDir/Dockerfile.multi-party-collab `".`""
+    $dockerArgs = "image build -t $imageName -f $dockerFileDir/Dockerfile.azure-cleanroom-samples $dockerFileDir"
     $customCliExtensions = @(Get-Item -Path "./docker/*.whl")
     if (0 -ne $customCliExtensions.Count)
     {

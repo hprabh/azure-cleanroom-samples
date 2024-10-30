@@ -1,0 +1,16 @@
+version: "3"
+
+services:
+  otel-collector:
+    image: azure-cleanroom-samples-otelcollector
+    volumes:
+    - $TELEMETRY_FOLDER:/telemetry
+    depends_on:
+    - aspire
+  aspire:
+    image: mcr.microsoft.com/dotnet/nightly/aspire-dashboard:8.0-preview
+    ports:
+    - "18888"   # Dashboard
+    - "18889"    # OTLP gRPC receiver
+    environment:
+      DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS: "true"
