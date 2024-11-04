@@ -8,10 +8,11 @@ param(
 
     [string]$samplesRoot = "/home/samples",
     [string]$privateDir = "$samplesRoot/demo-resources.private",
+    [string]$telemetryDir = "$privateDir/demo-resources.telemetry",
 
-    [string]$datastoreDir = "$privateDir/datastores",
     [string]$contractConfig = "$privateDir/$resourceGroup-$demo.generated.json",
-    [string]$datastoreConfig = "$privateDir/datastores.config"
+    [string]$datastoreConfig = "$privateDir/datastores.config",
+    [string]$dashboardName = "azure-cleanroom-samples-telemetry"
 )
 
 #https://learn.microsoft.com/en-us/powershell/scripting/learn/experimental-features?view=powershell-7.4#psnativecommanderroractionpreference
@@ -27,30 +28,42 @@ $telemetryConfigured = $true
 
 if ($telemetryConfigured)
 {
-    $telemetryFolder = "$datastoreDir/infrastructure-telemetry/$demo"
-    mkdir -p $telemetryFolder
-
+    #
+    # Download infrastructure telemetry.
+    #
+    $infrastructureDir = "$telemetryDir/infrastructure-telemetry/$demo"
+    mkdir -p $infrastructureDir
     az cleanroom telemetry download `
         --cleanroom-config $contractConfigResult.contractFragment `
         --datastore-config $datastoreConfig `
-        --target-folder $telemetryFolder
+        --target-folder $infrastructureDir
     # TODO (phanic): Fetch exact name of the backing datastore from the clean room spec.
-    $dataDir = "$telemetryFolder/infrastructure-telemetry-*"
+    $dataDir = "$infrastructureDir/infrastructure-telemetry-*"
     Write-Log OperationCompleted `
         "Downloaded infrastructure telemetry to '$dataDir'."
 
-    $logsFolder = "$datastoreDir/application-telemetry/$demo"
-    mkdir -p $logsFolder
+    # Display dashboard details.
+    $dashboardUrl = docker compose -p $dashboardName port "aspire" 18888
+    $dashboardPort = ($dashboardUrl -split ":")[1]
+    Write-Log OperationCompleted `
+        "Open Aspire dashboard at http://localhost:$dashboardPort to view" `
+        "infrastructure telemetry."
 
+    #
+    # Download application telemetry.
+    #
+    $applicationDir = "$telemetryDir/application-telemetry/$demo"
+    mkdir -p $applicationDir
     az cleanroom logs download `
         --cleanroom-config $contractConfigResult.contractFragment `
         --datastore-config $datastoreConfig `
-        --target-folder $logsFolder
+        --target-folder $applicationDir
     # TODO (phanic): Fetch exact name of the backing datastore from the clean room spec.
-    $dataDir = "$logsFolder/application-telemetry-*"
+    $dataDir = "$applicationDir/application-telemetry-*"
     Write-Log OperationCompleted `
         "Downloaded application telemetry to '$dataDir'."
 
+    # Display application logs.
     Write-Log Verbose `
         "-----BEGIN OUTPUT-----" `
         "$($PSStyle.Reset)"
