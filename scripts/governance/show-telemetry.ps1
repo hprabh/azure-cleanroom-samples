@@ -3,12 +3,15 @@ param(
     [ValidateSet("cleanroomhello-job", "cleanroomhello-api", "analytics")]
     [string]$demo,
 
+    [Parameter(Mandatory = $true)]
+    [string]$contractId,
+
     [string]$persona = "$env:PERSONA",
     [string]$resourceGroup = "$env:RESOURCE_GROUP",
 
     [string]$samplesRoot = "/home/samples",
     [string]$privateDir = "$samplesRoot/demo-resources.private",
-    [string]$telemetryDir = "$privateDir/demo-resources.telemetry",
+    [string]$telemetryDir = "$samplesRoot/demo-resources.telemetry",
 
     [string]$contractConfig = "$privateDir/$resourceGroup-$demo.generated.json",
     [string]$datastoreConfig = "$privateDir/datastores.config",
@@ -31,7 +34,9 @@ if ($telemetryConfigured)
     #
     # Download infrastructure telemetry.
     #
-    $infrastructureDir = "$telemetryDir/infrastructure-telemetry/$demo"
+    $infrastructureDir = "$telemetryDir/infrastructure-telemetry/$contractId"
+    Write-Log OperationStarted `
+        "Downloading infrastructure telemetry to '$infrastructureDir'."
     mkdir -p $infrastructureDir
     az cleanroom telemetry download `
         --cleanroom-config $contractConfigResult.contractFragment `
@@ -42,17 +47,12 @@ if ($telemetryConfigured)
     Write-Log OperationCompleted `
         "Downloaded infrastructure telemetry to '$dataDir'."
 
-    # Display dashboard details.
-    $dashboardUrl = docker compose -p $dashboardName port "aspire" 18888
-    $dashboardPort = ($dashboardUrl -split ":")[1]
-    Write-Log OperationCompleted `
-        "Open Aspire dashboard at http://localhost:$dashboardPort to view" `
-        "infrastructure telemetry."
-
     #
     # Download application telemetry.
     #
-    $applicationDir = "$telemetryDir/application-telemetry/$demo"
+    $applicationDir = "$telemetryDir/application-telemetry/$contractId"
+    Write-Log OperationStarted `
+        "Downloading application telemetry to '$applicationDir'."
     mkdir -p $applicationDir
     az cleanroom logs download `
         --cleanroom-config $contractConfigResult.contractFragment `
@@ -64,12 +64,21 @@ if ($telemetryConfigured)
         "Downloaded application telemetry to '$dataDir'."
 
     # Display application logs.
+    Write-Log Warning `
+        "$([environment]::NewLine)Application logs:"
     Write-Log Verbose `
         "-----BEGIN OUTPUT-----" `
         "$($PSStyle.Reset)"
-    cat "$dataDir/**/demoapp-$demo.log"
+    cat $dataDir/**/demoapp-$demo.log
     Write-Log Verbose `
-        "$([environment]::NewLine)-----END OUTPUT-----"
+        "-----END OUTPUT-----"
+
+    # Display dashboard details.
+    $dashboardUrl = docker compose -p $dashboardName port "aspire" 18888
+    $dashboardPort = ($dashboardUrl -split ":")[1]
+    Write-Log Warning `
+        "$([environment]::NewLine)Open telemetry dashboard at http://localhost:$dashboardPort" `
+        "to view infrastructure telemetry."
 }
 else
 {

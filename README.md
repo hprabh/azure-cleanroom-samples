@@ -1,12 +1,13 @@
-# Multi-party collaboration <!-- omit from toc -->
+# Azure Clean Room Samples <!-- omit from toc -->
 
 The demos in this repository demonstrate usage of an Azure **_Confidential Clean Room_** (**CCR**) for multi-party collaboration.
 
 - Confidential access of protected data. [Job] / [API]
 - Confidential execution of audited queries on protected datasets using a standalone DB engine residing within the CCR. [Analytics]
+<!--
 - Confidential inference from sensitive data using a protected ML model. [Inference]
 - Confidential fine tuning of a protected ML model on protected datasets. [Training]
-
+-->
 <!-- simple-api [API]
     litwareinc - hitcount app in, logs and telemetry out
     fabrikam - file in, nothing out
@@ -76,10 +77,8 @@ collab-common
   - [Deploy clean room (operator)](#deploy-clean-room-operator)
   - [Download encrypted output (fabrikam, contosso)](#download-encrypted-output-fabrikam-contosso)
 - [Governing the cleanroom](#governing-the-cleanroom)
-  - [Download and share logs (litware)](#download-and-share-logs-litware)
-  - [Explore the downloaded logs](#explore-the-downloaded-logs)
-  - [View telemetry for infrastucture containers](#view-telemetry-for-infrastucture-containers)
-  - [See audit events](#see-audit-events)
+  - [Viewing telemetry (litware)](#viewing-telemetry-litware)
+  - [Viewing audit events (operator, litware, fabrikam, contosso)](#viewing-audit-events-operator-litware-fabrikam-contosso)
   - [Contributing](#contributing)
   - [Trademarks](#trademarks)
 
@@ -90,8 +89,8 @@ All the demos demonstrate collaborations where one or more of the following part
   - **_Contosso_**, collaborator owning sensitive dataset(s) that can be consumed by applications inside a CCR.
   
 The following parties are additionally involved in completing the end to end demo:
-  - **_Client_**, consumer invoking the CCR endpoint to gather insights, without any access to the protected data itself.
   - **_Operator_**, clean room provider hosting the CCR infrastructure.
+  - **_Client_**, consumer invoking the CCR endpoint to gather insights, without any access to the protected data itself.
 
 In all cases, a CCR will be executed to run the application while protecting the privacy of all ingested data, as well as protecting any confidential output. The CCR instance can be deployed by the **_operator_**, any of the collaborators or even the **_client_** without any impact on the zero-trust promise architecture.
 
@@ -417,11 +416,6 @@ The following command initializes datastores and uploads encrypted datasets requ
 ```powershell
 $demo = "<demo>" # ("cleanroomhello-job", "cleanroomhello-api", "analytics")
 
-# Publish data. 
-#
-# Data publisher persona is picked from $env:PERSONA by default, use -persona to override.
-# Storage account is picked from ./demo-resources.private/$env:RESOURCE_GROUP.generated.json by default, use -sa to override.
-#
 ./scripts/data/publish-data.ps1 -demo $demo
 ```
 
@@ -578,7 +572,7 @@ The collaborating parties can now query the governance service to get the propos
 ```powershell
 $contractId = "<contractId>" # E.g. "collab-cleanroomhello-job-8a106fb6"
 
-./scripts/contract/confirm-contract.ps1 -contractId $contractId
+./scripts/contract/confirm-contract.ps1 -contractId $contractId -demo $demo
 ```
 
 
@@ -671,7 +665,7 @@ Once the ARM template and CCE policy proposals have been accepted and access has
 ```
 
 
-Run the following script to wait for the cleanroom to exit.
+Run the following script to wait for the cleanroom application to start:
 
 
 ```powershell
@@ -679,134 +673,59 @@ Run the following script to wait for the cleanroom to exit.
 ```
 
 
+> [!TIP]
+If the cleanroom application is being executed as a job, add the `-job` switch to wait for the job to complete.
+
 ## Download encrypted output (fabrikam, contosso)
 
 As part of the execution, the cleanroom application may write out any computed outputs to the datasinks configured. Post execution, this (encrypted) output can be downloaded from the the backing storage account and decrypt locally by the party owning the datasink.
 
-
-```powershell
-./scripts/document/register-documents.ps1 -demo $demo -contractId $contractId
-./scripts/document/confirm-documents.ps1 -contractId $contractId
-```
-
-Run the following script to wait for the cleanroom to exit.
-
-<!--TODO (phanic): Get rid of this step?-->
-```powershell
-./scripts/data/copy-data.ps1 -demo $demo
-```
-
-This command downloads all the files from the storage container into a local folder. The application specific output can be viewed by running the following command:
+The application specific output can be viewed by running the following command:
 
 
 ```powershell
-pwsh ./demos/$demo/show-output.ps1
+pwsh ./demos/$demo/show-output.ps1 -contractId $contractId
 ```
 
 
 # Governing the cleanroom
-## Download and share logs (litware)
+## Viewing telemetry (litware)
 The application developer (_litware_) can download the infrastructure telemetry and application logs. These are available post execution in an encrypted form. To decrypt and inspect, run the following:
 
 
 ```powershell
-./scripts/data/copy-telemetry.ps1 -demo $demo
+./scripts/governance/show-telemetry.ps1 -demo $demo -contractId $contractId
 ```
 
-
-The above command downloads and decrypt the various files for metrics, traces and logs. The application developer can inspect these files and then choose to share them with the other collaborators.
-
-## Explore the downloaded logs
-See the logs emitted by the application container using the below command:
-
-
-<!--TODO (phanic): Clean up this command by using exact data store name.-->
-```powershell
-cat ./demo-resources.private/datastores/application-telemetry-*/**/demoapp-$demo.log
-```
-
-
-This shows output as below:
-```powershell
-2024-06-05T12:54:17.945694635+00:00 stdout F File is present at: /mnt/remote/input/input.txt
-2024-06-05T12:54:17.945694635+00:00 stdout F Opening the input file.
-2024-06-05T12:54:17.953695222+00:00 stdout F Creating the output file.
-2024-06-05T12:54:18.168096107+00:00 stdout F Compressing the file.
-2024-06-05T12:54:18.169313592+00:00 stdout F File compressed successfully.
-```
-
-
-## View telemetry for infrastucture containers
-
-One can also inspect the telemetry emitted by the clean room infrastructure containers as telemetry was enabled in this sample.
-
-The infrastructure containers traces, logs and metrics that are useful for debugging errors, tracing the execution sequence etc.
-
-To view the telemetry, run the following command:
-<!--TODO (phanic): This command fails with docker-on-docker as the compose file is using a relative path.-->
-```powershell
-az cleanroom telemetry aspire-dashboard `
-    --telemetry-folder ./publisher-demo/telemetry/infrastructure-telemetry
-```
-
-The telemetry dashboard uses [.NET Aspire Dashboard](https://learn.microsoft.com/en-us/dotnet/aspire/fundamentals/dashboard/standalone?tabs=bash) to display the traces, logs and metrics that are generated. This spins up a set of docker containers with the aspire dashboard to visualize the telemetry.
+The infrastructure containers emit traces, logs and metrics that are useful for debugging errors, tracing the execution sequence etc. The telemetry dashboard uses [.NET Aspire Dashboard](https://learn.microsoft.com/en-us/dotnet/aspire/fundamentals/dashboard/standalone?tabs=bash) to display these.
 
 There are different views that are available:
 1. Traces: Track requests and activities across all the sidecars so that we can see where time is spent and track down specific failures.
 2. Logs: Record individual operations in the context of one of the request / activity.
 3. Metrics: Measure counters and gauges such as successful requests, failed requests, latency etc.
 
-### Traces view: <!-- omit from toc -->
+### Traces view <!-- omit from toc -->
 
-![alt text](./assets/traces-view.png)
+![Traces as seen in the dashboard](./assets/traces-view.png)
 
-### Broken down trace view: <!-- omit from toc -->
+#### Trace detail view <!-- omit from toc -->
 
-![alt text](./assets/traces-expanded.png)
+![Trace details as seen in the dashboard](./assets/traces-expanded.png)
 
-### Logs view: <!-- omit from toc -->
+### Structured logs view <!-- omit from toc -->
 
-![alt text](./assets/logs.png)
+![Structured logs as seen in the dashboard](./assets/logs.png)
 
 
-## See audit events
-Either publisher or the consumer can also check for any audit events raised by the clean room during its execution for the contract by running the command below. Below instance runs the command as the `publisher-client`:
+## Viewing audit events (operator, litware, fabrikam, contosso)
+
+All collaborators can check for any audit events raised by the clean room during its execution for the contract by running this command:
+
+
 ```powershell
-az cleanroom governance contract event list `
-    --contract-id $contractId `
-    --all `
-    --governance-client $env:PERSONA-client
-    --query "value[*].[id, data.source, timestamp_iso, data.message]"
+./scripts/governance/show-audit-events.ps1 -contractId $contractId
 ```
-This shows output as below:
-```json
-{
-  "value": [
-    {
-      "data": {
-        "message": "starting execution of demo-app container",
-        "source": "code-launcher"
-      },
-      "id": "collab1",
-      "scope": "",
-      "seqno": 100,
-      "timestamp": "1717591984758",
-      "timestamp_iso": "2024-06-05T12:53:04.758Z"
-    },
-    {
-      "data": {
-        "message": "demo-app container terminated with exit code 0",
-        "source": "code-launcher"
-      },
-      "id": "collab1",
-      "scope": "",
-      "seqno": 102,
-      "timestamp": "1717592058947",
-      "timestamp_iso": "2024-06-05T12:54:18.947Z"
-    }
-  ]
-}
-```
+
 
 ## Contributing
 
