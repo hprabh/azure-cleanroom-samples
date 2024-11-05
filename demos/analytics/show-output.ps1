@@ -78,7 +78,7 @@ if ($false -eq $interactive)
         $query = $doc.Value.id
         Write-Log OperationStarted `
             "Executing query '$query'..."
-        curl -k https://${cleanroomEndpoint}:8310/app/run_query/$query | jq
+        (curl -k https://${cleanroomEndpoint}:8310/app/run_query/$query) | jq
     }
 }
 else {

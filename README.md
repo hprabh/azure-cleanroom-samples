@@ -634,10 +634,10 @@ The flow below is executed by all the collaborators in their respective Azure te
 ```mermaid
 sequenceDiagram
     title Clean room access setup
-    participant m0 as Collaborator
+    actor m0 as Collaborator
     participant akv as Azure Key Vault
     participant storage as Azure Storage
-    participant mi as ManagedIdentity
+    participant mi as Managed Identity
 
     m0->>m0: Create KEK
     m0->>akv: Save KEK with SKR policy
