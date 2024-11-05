@@ -1,0 +1,1 @@
+. $PSScriptRoot/write-log.ps1
