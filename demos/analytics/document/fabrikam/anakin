@@ -1,1 +1,1 @@
-SELECT author, COUNT(*) AS Number_Of_Mentions FROM COMBINED_TWEETS WHERE mentions LIKE '%MikeDoesBigData%' GROUP BY author ORDER BY Number_Of_Mentions DESC
+SELECT author, COUNT(*) AS Number_Of_Mentions FROM COMBINED_TWEETS WHERE (mentions LIKE '%MikeDoesBigData%' AND Number_Of_Mentions >= 10) GROUP BY author ORDER BY Number_Of_Mentions DESC
