@@ -110,7 +110,7 @@ All the involved parties need to bring up a local environment to participate in 
 > [!NOTE]
 > Prerequisites to bring up the environment
 > * Docker installed locally. Installation instructions [here](https://docs.docker.com/engine/install/).
-> * Powershell installed locally. Installation instructions [here](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell).
+> * PowerShell installed locally. Installation instructions [here](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell).
 
 ```powershell
 # Launch a pre-built docker container to create an environment in the context of one of the parties.
