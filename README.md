@@ -313,17 +313,17 @@ sequenceDiagram
       CCF-->>mx: State: Accepted
     end
     par
-      mx->>m0: Share ccfEndpoint URL eg.<br>https://<name>.confidential-ledger.azure.com
+      mx->>m0: Share ccfEndpoint URL eg.<br>https://<name>.<region>.azurecontainer.io
       m0->>CCF: Verifies state of the consortium
       m0->>CCF: Activate membership
       Note over CCF: litware active
     and
-      mx->>m1: Share ccfEndpoint URL eg.<br>https://<name>.confidential-ledger.azure.com
+      mx->>m1: Share ccfEndpoint URL eg.<br>https://<name>.<region>.azurecontainer.io
       m1->>CCF: Verifies state of the consortium
       m1->>CCF: Activate membership
       Note over CCF: fabrikam active
     and
-      mx->>m2: Share ccfEndpoint URL eg.<br>https://<name>.confidential-ledger.azure.com
+      mx->>m2: Share ccfEndpoint URL eg.<br>https://<name>.<region>.azurecontainer.io
       m2->>CCF: Verifies state of the consortium
       m2->>CCF: Activate membership
       Note over CCF: contosso active
