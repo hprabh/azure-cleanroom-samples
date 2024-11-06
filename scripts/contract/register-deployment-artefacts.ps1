@@ -8,7 +8,7 @@ param(
     [string]$cgsClient = "$env:PERSONA-client",
 
     [string]$samplesRoot = "/home/samples",
-    [string]$privateDir = "$samplesRoot/demo-resources.private",
+    [string]$privateDir = "$samplesRoot/demo-resources/.private",
     [string]$artefactsDir = "$privateDir/$contractId-artefacts"
 )
 

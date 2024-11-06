@@ -5,7 +5,7 @@ param(
     [string]$persona = "$env:PERSONA",
 
     [string]$samplesRoot = "/home/samples",
-    [string]$privateDir = "$samplesRoot/demo-resources.private",
+    [string]$privateDir = "$samplesRoot/demo-resources/.private",
     [string]$demosRoot = "$samplesRoot/demos",
 
     [string]$datastoreConfig = "$privateDir/datastores.config",

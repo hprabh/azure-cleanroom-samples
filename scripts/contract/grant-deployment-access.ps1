@@ -10,9 +10,9 @@ param(
     [string]$resourceGroup = "$env:RESOURCE_GROUP",
 
     [string]$samplesRoot = "/home/samples",
-    [string]$publicDir = "$samplesRoot/demo-resources.public",
-    [string]$privateDir = "$samplesRoot/demo-resources.private",
-    [string]$secretDir = "$samplesRoot/demo-resources.secret",
+    [string]$publicDir = "$samplesRoot/demo-resources/.public",
+    [string]$privateDir = "$samplesRoot/demo-resources/.private",
+    [string]$secretDir = "$samplesRoot/demo-resources/.secret",
 
     [string]$oidcContainerName = "cgs-oidc",
     [string]$ccfEndpoint = (Get-Content "$publicDir/ccfEndpoint"),

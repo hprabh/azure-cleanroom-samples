@@ -3,8 +3,8 @@ param(
     [string]$resourceGroup = "$env:RESOURCE_GROUP",
 
     [string]$samplesRoot = "/home/samples",
-    [string]$secretDir = "$samplesRoot/demo-resources.secret",
-    [string]$publicDir = "$samplesRoot/demo-resources.public",
+    [string]$secretDir = "$samplesRoot/demo-resources/.secret",
+    [string]$publicDir = "$samplesRoot/demo-resources/.public",
 
     [string]$cgsClient = "$persona-client",
     [string]$ccfEndpoint = "$publicDir/ccfEndpoint"

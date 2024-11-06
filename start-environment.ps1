@@ -49,20 +49,60 @@ function Get-Confirmation {
     return ($response -eq $YesLabel.ToLower())
 }
 
-#
-# Launch telemetry dashboard.
-#
-docker build -f $dockerFileDir/Dockerfile.azure-cleanroom-samples-otelcollector -t $imageName-otelcollector $dockerFileDir
+$hostBase = "$pwd/demo-resources"
+$virtualBase = "/home/samples/demo-resources"
 
-$telemetryPath = "$pwd/demo-resources/resources.telemetry"
-mkdir -p $telemetryPath
-$env:TELEMETRY_FOLDER = $telemetryPath
-$dashboardName = "$imageName-telemetry"
-docker compose -p $dashboardName -f $dockerFileDir/telemetry/docker-compose.yaml up -d --remove-orphans
-$dashboardUrl = docker compose -p $dashboardName port "aspire" 18888
-$dashboardPort = ($dashboardUrl -split ":")[1]
-Write-Log OperationCompleted `
-    "Aspire dashboard deployed at http://localhost:$dashboardPort."
+#
+# Create host directories shared by sample environment containers for all persona.
+#
+$publicDir = ".public"
+mkdir -p "$hostBase/$publicDir"
+$telemetryDir = ".telemetry"
+mkdir -p "$hostBase/$telemetryDir"
+$ccfDir = ".ccf"
+mkdir -p "$hostBase/$ccfDir"
+
+#
+# Create host directories private to sample environment containers per persona.
+#
+$privateDir = ".private"
+mkdir -p "$hostBase/$persona/$privateDir"
+$secretDir = ".secret"
+mkdir -p "$hostBase/$persona/$secretDir"
+
+#
+# Launch telemetry dashboard for 'litware'.
+#
+if ($persona -eq "litware")
+{
+    docker build -f $dockerFileDir/Dockerfile.azure-cleanroom-samples-otelcollector -t $imageName-otelcollector $dockerFileDir
+
+    $env:TELEMETRY_FOLDER = $telemetryDir
+    $dashboardName = "$imageName-telemetry"
+    docker compose -p $dashboardName -f $dockerFileDir/telemetry/docker-compose.yaml up -d --remove-orphans
+
+    $dashboardUrl = docker compose -p $dashboardName port "aspire" 18888
+    $dashboardPort = ($dashboardUrl -split ":")[1]
+    Write-Log OperationCompleted `
+        "Aspire dashboard deployed at http://localhost:$dashboardPort."
+}
+
+#
+# Launch CCF provider for 'operator' and share az cli configuration directory.
+#
+if ($persona -eq "operator")
+{
+    $env:CCF_WORKSPACE = "$hostBase/$ccfDir"
+    $env:AZURE_FOLDER = "$hostBase/$ccfDir/.azure"
+    $providerName = "$imageName-ccf"
+    docker compose -p $providerName -f $dockerFileDir/ccf/docker-compose.yaml up -d --remove-orphans
+
+    $azureConfigDir = "$virtualBase/$ccfDir/.azure"
+}
+else
+{
+    $azureConfigDir = "$virtualBase/$privateDir/.azure"
+}
 
 #
 # Launch sample environment.
@@ -112,15 +152,18 @@ if ($createContainer)
     {
         $resourceGroup = "$persona-$((New-Guid).ToString().Substring(0, 8))"
     }
+
     docker create `
         --env PERSONA=$persona `
         --env RESOURCE_GROUP=$resourceGroup `
         --env RESOURCE_GROUP_LOCATION=$resourceGroupLocation `
+        --env AZURE_CONFIG_DIR=$azureConfigDir `
         -v "//var/run/docker.sock:/var/run/docker.sock" `
-        -v "$pwd/demo-resources/resources.public:/home/samples/demo-resources.public" `
-        -v "$pwd/demo-resources/resources.telemetry:/home/samples/demo-resources.telemetry" `
-        -v "$pwd/demo-resources/resources.$persona.private:/home/samples/demo-resources.private" `
-        -v "$pwd/demo-resources/resources.$persona.secret:/home/samples/demo-resources.secret" `
+        -v "$($hostBase/$publicDir):$($virtualBase/$publicDir)" `
+        -v "$($hostBase/$privateDir):$($virtualBase/$privateDir)" `
+        -v "$($hostBase/$secretDir):$($virtualBase/$secretDir)" `
+        -v "$($hostBase/$telemetryDir):$($virtualBase/$telemetryDir)" `
+        -v "$($hostBase/$ccfDir):$($virtualBase/$ccfDir)" `
         --network host `
         --name $containerName `
         -it $imageName

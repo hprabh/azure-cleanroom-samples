@@ -7,8 +7,8 @@ param(
     [string]$resourceGroup = "$env:RESOURCE_GROUP",
 
     [string]$samplesRoot = "/home/samples",
-    [string]$privateDir = "$samplesRoot/demo-resources.private",
-    [string]$secretDir = "$samplesRoot/demo-resources.secret",
+    [string]$privateDir = "$samplesRoot/demo-resources/.private",
+    [string]$secretDir = "$samplesRoot/demo-resources/.secret",
     [string]$demosRoot = "$samplesRoot/demos",
     [string]$sa = "",
 

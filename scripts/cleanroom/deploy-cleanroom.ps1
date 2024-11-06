@@ -7,7 +7,7 @@ param(
 
     [string]$location = "westeurope",
     [string]$samplesRoot = "/home/samples",
-    [string]$privateDir = "$samplesRoot/demo-resources.private",
+    [string]$privateDir = "$samplesRoot/demo-resources/.private",
     [string]$artefactsDir = "$privateDir/$contractId-artefacts",
 
     [string]$cleanRoomName = "cleanroom-$contractId"

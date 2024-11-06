@@ -7,7 +7,7 @@ param(
     [string]$resourceGroup = "$env:RESOURCE_GROUP",
 
     [string]$samplesRoot = "/home/samples",
-    [string]$privateDir = "$samplesRoot/demo-resources.private",
+    [string]$privateDir = "$samplesRoot/demo-resources/.private",
     [string]$demosRoot = "$samplesRoot/demos",
 
     [string]$contractConfig = "$privateDir/$resourceGroup-$demo.generated.json",

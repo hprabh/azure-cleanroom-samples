@@ -10,8 +10,8 @@ param(
     [string]$resourceGroup = "$env:RESOURCE_GROUP",
 
     [string]$samplesRoot = "/home/samples",
-    [string]$privateDir = "$samplesRoot/demo-resources.private",
-    [string]$telemetryDir = "$samplesRoot/demo-resources.telemetry",
+    [string]$privateDir = "$samplesRoot/demo-resources/.private",
+    [string]$telemetryDir = "$samplesRoot/demo-resources/.telemetry",
 
     [string]$contractConfig = "$privateDir/$resourceGroup-$demo.generated.json",
     [string]$datastoreConfig = "$privateDir/datastores.config",

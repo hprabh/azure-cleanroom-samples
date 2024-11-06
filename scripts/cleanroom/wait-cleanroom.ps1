@@ -7,7 +7,7 @@ param(
     [string]$cleanRoomName = "cleanroom-$contractId",
 
     [string]$samplesRoot = "/home/samples",
-    [string]$publicDir = "$samplesRoot/demo-resources.public",
+    [string]$publicDir = "$samplesRoot/demo-resources/.public",
     [string]$cleanroomEndpoint = "$publicDir/$cleanRoomName.endpoint",
 
     [switch]$job

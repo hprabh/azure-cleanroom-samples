@@ -7,8 +7,8 @@ param(
     [string]$resourceGroupLocation = "$env:RESOURCE_GROUP_LOCATION",
 
     [string]$samplesRoot = "/home/samples",
-    [string]$privateDir = "$samplesRoot/demo-resources.private",
-    [string]$secretDir = "$samplesRoot/demo-resources.secret",
+    [string]$privateDir = "$samplesRoot/demo-resources/.private",
+    [string]$secretDir = "$samplesRoot/demo-resources/.secret",
 
     [string]$maaEndpoint = "https://sharedneu.neu.attest.azure.net",
 
