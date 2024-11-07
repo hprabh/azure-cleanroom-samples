@@ -8,7 +8,7 @@ param(
     [string]$cgsClient = "$env:PERSONA-client",
 
     [string]$samplesRoot = "/home/samples",
-    [string]$publicDir = "$samplesRoot/demo-resources/.public",
+    [string]$publicDir = "$samplesRoot/demo-resources/public",
 
     [string]$contractId = "collab-$demo-$((New-Guid).ToString().Substring(0, 8))",
     [string]$cleanroomConfig = "$publicDir/$contractId-cleanroom.config"

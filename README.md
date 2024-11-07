@@ -342,12 +342,12 @@ Above command shows output similar to below.
 ```
 -- Generating identity private key and certificate for participant "contosso"...
 Identity curve: secp384r1
-Identity private key generated at:   ./demo-resources/.secret/contosso_privk.pem
-Identity certificate generated at:   ./demo-resources/.secret/contosso_cert.pem (to be registered in CCF)
+Identity private key generated at:   ./demo-resources/secret/contosso_privk.pem
+Identity certificate generated at:   ./demo-resources/secret/contosso_cert.pem (to be registered in CCF)
 -- Generating RSA encryption key pair for participant "contosso"...
 writing RSA key
-Encryption private key generated at:  ./demo-resources/.secret/contosso_enc_privk.pem
-Encryption public key generated at:   ./demo-resources/.secret/contosso_enc_pubk.pem (to be registered in CCF)
+Encryption private key generated at:  ./demo-resources/secret/contosso_enc_privk.pem
+Encryption public key generated at:   ./demo-resources/secret/contosso_enc_pubk.pem (to be registered in CCF)
 ```
 
 The above command will generate the public/private key pair. The member’s identity private key (e.g. `contosso_privk.pem`) should be stored on a trusted device (e.g. HSM) and kept private (not shared with any other member) while the certificate (e.g. `contosso_cert.pem`) would be registered in CCF (later in the flow).
@@ -370,7 +370,7 @@ The _operator_ (who is hosting the CCF instance) registers each member of the co
 ```
 
 > [!WARNING]
-> In the default sample environment, the containers for all participants have their `/home/samples/demo-resources/.public` mapped to a single host directory, so this identity information would be available to all parties automatically once generated. If not, the identity details of all other parties needs to made available in `/home/samples/demo-resources/.public` of the _operator's_ environment before running the registration command above.
+> In the default sample environment, the containers for all participants have their `/home/samples/demo-resources/public` mapped to a single host directory, so this identity information would be available to all parties automatically once generated. If not, the identity details of all other parties needs to made available in `/home/samples/demo-resources/public` of the _operator's_ environment before running the registration command above.
 
 ## Join the consortium (litware, fabrikam, contosso)
 Once the collaborators have been added, they now need to activate their membership before they can participate in the collaboration. The operator must share the `ccfEndpoint` value to the collaborators so they can know which CCF instance to connect to.
@@ -562,7 +562,7 @@ The _operator_ merges all the contract fragments shared by the collaborators and
 
 
 > [!WARNING]
-> In the default sample environment, the containers for all participants have their `/home/samples/demo-resources/.public` mapped to a single host directory, so the contract fragments would be available to all parties automatically once generated. If not, the fragments  of all other parties needs to made available in `/home/samples/demo-resources/.public` of the _operator's_ environment before running the command above.
+> In the default sample environment, the containers for all participants have their `/home/samples/demo-resources/public` mapped to a single host directory, so the contract fragments would be available to all parties automatically once generated. If not, the fragments  of all other parties needs to made available in `/home/samples/demo-resources/public` of the _operator's_ environment before running the command above.
 
 ## Agreeing upon the contract (litware, fabrikam, contosso, operator)
 <!--TODO (phanic): Get rid of the operator agreeing upon the contract.-->

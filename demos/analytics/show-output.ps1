@@ -5,8 +5,8 @@ param(
     [string]$persona = "$env:PERSONA",
 
     [string]$samplesRoot = "/home/samples",
-    [string]$privateDir = "$samplesRoot/demo-resources/.private",
-    [string]$publicDir = "$samplesRoot/demo-resources/.public",
+    [string]$privateDir = "$samplesRoot/demo-resources/private",
+    [string]$publicDir = "$samplesRoot/demo-resources/public",
     [string]$demosRoot = "$samplesRoot/demos",
 
     [string]$cleanRoomName = "cleanroom-$contractId",

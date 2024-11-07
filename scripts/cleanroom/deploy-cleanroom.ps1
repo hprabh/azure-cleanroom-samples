@@ -7,7 +7,7 @@ param(
 
     [string]$location = "westeurope",
     [string]$samplesRoot = "/home/samples",
-    [string]$privateDir = "$samplesRoot/demo-resources/.private",
+    [string]$privateDir = "$samplesRoot/demo-resources/private",
     [string]$artefactsDir = "$privateDir/$contractId-artefacts",
 
     [string]$cleanRoomName = "cleanroom-$contractId"
@@ -18,6 +18,8 @@ $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
 Import-Module $PSScriptRoot/../common/common.psm1
+
+Test-AzureAccessToken
 
 Write-Log OperationStarted `
     "Generating CA cert for contract '$contractId'..." 

@@ -7,8 +7,8 @@ param(
     [string]$resourceGroup = "$env:RESOURCE_GROUP",
 
     [string]$samplesRoot = "/home/samples",
-    [string]$privateDir = "$samplesRoot/demo-resources/.private",
-    [string]$publicDir = "$samplesRoot/demo-resources/.public",
+    [string]$privateDir = "$samplesRoot/demo-resources/private",
+    [string]$publicDir = "$samplesRoot/demo-resources/public",
 
     [string]$contractConfig = "$privateDir/$resourceGroup-$demo.generated.json",
     [string]$contractFragment = "$publicDir/$persona-$demo.config",
@@ -22,6 +22,8 @@ $PSNativeCommandUseErrorActionPreference = $true
 
 Import-Module $PSScriptRoot/../common/common.psm1
 Import-Module $PSScriptRoot/../azure-helpers/azure-helpers.psm1 -Force -DisableNameChecking
+
+Test-AzureAccessToken
 
 Write-Log OperationStarted `
     "Initializing cleanroom specification '$contractFragment'..." 

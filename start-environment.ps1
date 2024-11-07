@@ -11,7 +11,8 @@ param(
 
     [string]$dashboardName = "$imageName-telemetry",
 
-    [switch]$overwrite
+    [switch]$overwrite,
+    [switch]$shareCredentials
 )
 
 #https://learn.microsoft.com/en-us/powershell/scripting/learn/experimental-features?view=powershell-7.4#psnativecommanderroractionpreference
@@ -50,25 +51,29 @@ function Get-Confirmation {
 }
 
 $hostBase = "$pwd/demo-resources"
+$sharedBase = "$hostBase/shared"
+$personaBase = "$hostBase/$persona"
 $virtualBase = "/home/samples/demo-resources"
 
 #
 # Create host directories shared by sample environment containers for all persona.
 #
-$publicDir = ".public"
-mkdir -p "$hostBase/$publicDir"
-$telemetryDir = ".telemetry"
-mkdir -p "$hostBase/$telemetryDir"
-$ccfDir = ".ccf"
-mkdir -p "$hostBase/$ccfDir"
+$publicDir = "$sharedBase/public"
+mkdir -p $publicDir
+$telemetryDir = "$sharedBase/telemetry"
+mkdir -p $telemetryDir
+$ccfDir = "$sharedBase/ccf"
+mkdir -p $ccfDir
+$credentialsDir = "$sharedBase/credentials"
+mkdir -p $credentialsDir
 
 #
 # Create host directories private to sample environment containers per persona.
 #
-$privateDir = ".private"
-mkdir -p "$hostBase/$persona/$privateDir"
-$secretDir = ".secret"
-mkdir -p "$hostBase/$persona/$secretDir"
+$privateDir = "private"
+mkdir -p "$personaBase/$privateDir"
+$secretDir = "secret"
+mkdir -p "$personaBase/$secretDir"
 
 #
 # Launch telemetry dashboard for 'litware'.
@@ -92,12 +97,20 @@ if ($persona -eq "litware")
 #
 if ($persona -eq "operator")
 {
-    $env:CCF_WORKSPACE = "$hostBase/$ccfDir"
-    $env:AZURE_FOLDER = "$hostBase/$ccfDir/.azure"
+    $env:CCF_WORKSPACE = $ccfDir
+    $env:AZURE_FOLDER = $credentialsDir
     $providerName = "$imageName-ccf"
     docker compose -p $providerName -f $dockerFileDir/ccf/docker-compose.yaml up -d --remove-orphans
 
-    $azureConfigDir = "$virtualBase/$ccfDir/.azure"
+    $shareCredentials = $True
+}
+
+#
+# Enable shared credentials if configured.
+#
+if ($shareCredentials)
+{
+    $azureConfigDir = "$virtualBase/credentials/.azure"
 }
 else
 {
@@ -159,11 +172,9 @@ if ($createContainer)
         --env RESOURCE_GROUP_LOCATION=$resourceGroupLocation `
         --env AZURE_CONFIG_DIR=$azureConfigDir `
         -v "//var/run/docker.sock:/var/run/docker.sock" `
-        -v "$($hostBase/$publicDir):$($virtualBase/$publicDir)" `
-        -v "$($hostBase/$privateDir):$($virtualBase/$privateDir)" `
-        -v "$($hostBase/$secretDir):$($virtualBase/$secretDir)" `
-        -v "$($hostBase/$telemetryDir):$($virtualBase/$telemetryDir)" `
-        -v "$($hostBase/$ccfDir):$($virtualBase/$ccfDir)" `
+        -v "$($sharedBase):$virtualBase" `
+        -v "$personaBase/$($privateDir):$virtualBase/$privateDir" `
+        -v "$personaBase/$($secretDir):$virtualBase/$secretDir" `
         --network host `
         --name $containerName `
         -it $imageName

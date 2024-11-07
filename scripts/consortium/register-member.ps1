@@ -4,7 +4,7 @@ param(
     [string[]]$collaborators = ('litware', 'fabrikam', 'contosso'),
 
     [string]$samplesRoot = "/home/samples",
-    [string]$publicDir = "$samplesRoot/demo-resources/.public",
+    [string]$publicDir = "$samplesRoot/demo-resources/public",
 
     [string]$cgsClient = "$persona-client"
 )

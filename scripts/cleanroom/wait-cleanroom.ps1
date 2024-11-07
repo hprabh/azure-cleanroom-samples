@@ -7,7 +7,7 @@ param(
     [string]$cleanRoomName = "cleanroom-$contractId",
 
     [string]$samplesRoot = "/home/samples",
-    [string]$publicDir = "$samplesRoot/demo-resources/.public",
+    [string]$publicDir = "$samplesRoot/demo-resources/public",
     [string]$cleanroomEndpoint = "$publicDir/$cleanRoomName.endpoint",
 
     [switch]$job
@@ -18,6 +18,8 @@ $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
 Import-Module $PSScriptRoot/../common/common.psm1
+
+Test-AzureAccessToken
 
 function Get-TimeStamp {
     return "[{0:MM/dd/yy} {0:HH:mm:ss}]" -f (Get-Date)

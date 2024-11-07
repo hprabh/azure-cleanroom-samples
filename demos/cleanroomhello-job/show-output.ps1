@@ -5,8 +5,8 @@ param(
     [string]$persona = "$env:PERSONA",
 
     [string]$samplesRoot = "/home/samples",
-    [string]$privateDir = "$samplesRoot/demo-resources/.private",
-    [string]$publicDir = "$samplesRoot/demo-resources/.public",
+    [string]$privateDir = "$samplesRoot/demo-resources/private",
+    [string]$publicDir = "$samplesRoot/demo-resources/public",
     [string]$demosRoot = "$samplesRoot/demos",
 
     [string]$cleanRoomName = "cleanroom-$contractId",
@@ -42,6 +42,8 @@ if (-not(Test-Path -Path $datasinkPath))
         "No output available for persona '$persona' in demo '$demo'."
     return
 }
+
+Test-AzureAccessToken
 
 Write-Log OperationStarted `
     "Showing output from cleanroom '$cleanRoomName' (${cleanroomEndpoint}) for '$persona' in" `
