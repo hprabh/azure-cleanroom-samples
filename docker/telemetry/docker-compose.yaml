@@ -4,7 +4,7 @@ services:
   otel-collector:
     image: azure-cleanroom-samples-otelcollector
     volumes:
-    - $TELEMETRY_FOLDER:/telemetry
+    - ${TELEMETRY_FOLDER}:/telemetry
     depends_on:
     - aspire
   aspire:

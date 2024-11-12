@@ -60,12 +60,10 @@ $virtualBase = "/home/samples/demo-resources"
 #
 $publicDir = "$sharedBase/public"
 mkdir -p $publicDir
+#docker volume create $publicDir
 $telemetryDir = "$sharedBase/telemetry"
 mkdir -p $telemetryDir
-$ccfDir = "$sharedBase/ccf"
-mkdir -p $ccfDir
-$credentialsDir = "$sharedBase/credentials"
-mkdir -p $credentialsDir
+#docker volume create $telemetryDir
 
 #
 # Create host directories private to sample environment containers per persona.
@@ -97,6 +95,9 @@ if ($persona -eq "litware")
 #
 if ($persona -eq "operator")
 {
+    $ccfDir = "$sharedBase/ccf"
+    mkdir -p $ccfDir
+
     $env:CCF_WORKSPACE = $ccfDir
     $env:AZURE_FOLDER = $credentialsDir
     $providerName = "$imageName-ccf"
@@ -108,14 +109,17 @@ if ($persona -eq "operator")
 #
 # Enable shared credentials if configured.
 #
+$credentialsDir = "credentials/azure"
 if ($shareCredentials)
 {
-    $azureConfigDir = "$virtualBase/credentials/.azure"
+    $azHostDir = "$sharedBase/$credentialsDir"
 }
 else
 {
-    $azureConfigDir = "$virtualBase/$privateDir/.azure"
+    $azHostDir = "$personaBase/$credentialsDir"
 }
+
+mkdir -p $azHostDir
 
 #
 # Launch sample environment.
@@ -130,7 +134,7 @@ else
 {
     Write-Log Warning `
         "Samples environment for '$persona' already exists - '$($container.Names)' (ID: $($container.ID))."
-    $overwrite = $overwrite -or
+    $overwrite = $overwrite -or 
         (Get-Confirmation -Message "Overwrite container '$containerName'?" -YesLabel "Y" -NoLabel "N")
     if ($overwrite)
     {
@@ -166,13 +170,15 @@ if ($createContainer)
         $resourceGroup = "$persona-$((New-Guid).ToString().Substring(0, 8))"
     }
 
+    $azVirtualDir = "$($virtualBase)/$credentialsDir"
     docker create `
         --env PERSONA=$persona `
         --env RESOURCE_GROUP=$resourceGroup `
         --env RESOURCE_GROUP_LOCATION=$resourceGroupLocation `
-        --env AZURE_CONFIG_DIR=$azureConfigDir `
+        --env AZURE_CONFIG_DIR=$azVirtualDir`
         -v "//var/run/docker.sock:/var/run/docker.sock" `
         -v "$($sharedBase):$virtualBase" `
+        -v "$($azHostDir):$azVirtualDir" `
         -v "$personaBase/$($privateDir):$virtualBase/$privateDir" `
         -v "$personaBase/$($secretDir):$virtualBase/$secretDir" `
         --network host `
@@ -181,6 +187,13 @@ if ($createContainer)
     Write-Log OperationCompleted `
         "Created container '$containerName' to start samples environment for" `
         "'$persona'. Environment will be using resource group '$resourceGroup'."
+}
+
+if (!(Test-Path "$azHostDir/config")) {
+    Write-Log OperationStarted `
+        "Copying initial az configuration for container '$containerName'" `
+        "to '$azHostDir' ('$azVirtualDir')..." 
+    docker cp "$($containerName):/root/.azure/." $azHostDir
 }
 
 Write-Log OperationStarted `
