@@ -4,21 +4,11 @@ services:
     ports:
       - "0:8080"
     environment:
-      - WORKSPACE_DIR=/app/workspace
-      - HOST_WORKSPACE_DIR=${AZCLI_CCF_PROVIDER_CLIENT_WORKSPACE_DIR}
-      - IDENTITY_ENDPOINT=http://credentials-proxy:8080/token
+      - IDENTITY_ENDPOINT=${CREDENTIAL_PROXY_ENDPOINT}
       - IMDS_ENDPOINT="dummy_required_value"
-      - CREDENTIALS_PROXY_USER=${AZCLI_CCF_PROVIDER_UID}:${AZCLI_CCF_PROVIDER_GID}
-      - CREDENTIALS_PROXY_HOST_AZURE_VOLUME=${AZURE_FOLDER}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ${AZCLI_CCF_PROVIDER_CLIENT_WORKSPACE_DIR:-.}:/app/workspace
-    depends_on:
-    - credentials-proxy
-  credentials-proxy:
-    image: workleap/azure-cli-credentials-proxy
-    ports:
-      - "0:8080"
-    volumes:
-      - ${AZURE_FOLDER}:/app/.azure/
-    user: "${AZCLI_CCF_PROVIDER_UID}:${AZCLI_CCF_PROVIDER_GID}"
+networks:
+  default:
+      name: ${NETWORK_NAME}
+      external: true

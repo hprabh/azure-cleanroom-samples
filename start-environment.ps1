@@ -9,7 +9,9 @@ param(
     [string]$imageName = "azure-cleanroom-samples",
     [string]$dockerFileDir = "./docker",
 
-    [string]$dashboardName = "$imageName-telemetry",
+    [string]$accessTokenProviderName = "$imageName-credential-proxy",
+    [string]$ccfProviderName = "$imageName-ccf-provider",
+    [string]$telemetryDashboardName = "$imageName-telemetry",
 
     [switch]$overwrite,
     [switch]$shareCredentials
@@ -60,10 +62,8 @@ $virtualBase = "/home/samples/demo-resources"
 #
 $publicDir = "$sharedBase/public"
 mkdir -p $publicDir
-#docker volume create $publicDir
 $telemetryDir = "$sharedBase/telemetry"
 mkdir -p $telemetryDir
-#docker volume create $telemetryDir
 
 #
 # Create host directories private to sample environment containers per persona.
@@ -72,6 +72,44 @@ $privateDir = "private"
 mkdir -p "$personaBase/$privateDir"
 $secretDir = "secret"
 mkdir -p "$personaBase/$secretDir"
+
+$networkName = "$imageName-network"
+$network = (docker network ls --filter "name=^$networkName$" --format 'json') | ConvertFrom-Json
+if ($null -eq $network)
+{
+    docker network create $networkName
+}
+
+#
+# Launch credential proxy if sharing credentials.
+#
+if ($shareCredentials -or ($persona -eq "operator"))
+{
+    $containerName = $accessTokenProviderName
+    $container = (docker container ls -a --filter "name=^$containerName$" --format 'json') | ConvertFrom-Json
+    if ($null -eq $container)
+    {
+        docker container create `
+            -p "0:8080" `
+            --network $networkName `
+            --name $containerName `
+            "workleap/azure-cli-credentials-proxy"
+    }
+
+    docker container start $containerName
+
+    $PSNativeCommandUseErrorActionPreference = $false
+    $(docker exec $containerName sh -c "az account get-access-token")
+    $PSNativeCommandUseErrorActionPreference = $true
+
+    if (0 -ne $LASTEXITCODE)
+    {
+        docker exec -it $containerName sh -c "az login"
+    }
+
+    docker exec $containerName sh -c "az account show"
+    $credentialProxyEndpoint = "http://$($accessTokenProviderName):8080/token"
+}
 
 #
 # Launch telemetry dashboard for 'litware'.
@@ -95,31 +133,26 @@ if ($persona -eq "litware")
 #
 if ($persona -eq "operator")
 {
-    $ccfDir = "$sharedBase/ccf"
-    mkdir -p $ccfDir
+    # $containerName = $ccfProviderName
+    # $container = (docker container ls -a --filter "name=^$containerName$" --format 'json') | ConvertFrom-Json
+    # if ($null -eq $container)
+    # {
+    #     docker container create `
+    #         --env IDENTITY_ENDPOINT="http://$($accessTokenProviderName):8080/token" `
+    #         --env IMDS_ENDPOINT="dummy_required_value" `
+    #         -v "//var/run/docker.sock:/var/run/docker.sock" `
+    #         -p "0:8080" `
+    #         --network $networkName `
+    #         --name $containerName `
+    #         "mcr.microsoft.com/cleanroom/ccf/ccf-provider-client:1.0.11"
+    # }
 
-    $env:CCF_WORKSPACE = $ccfDir
-    $env:AZURE_FOLDER = $credentialsDir
-    $providerName = "$imageName-ccf"
-    docker compose -p $providerName -f $dockerFileDir/ccf/docker-compose.yaml up -d --remove-orphans
+    # docker container start $containerName
 
-    $shareCredentials = $True
+    $env:NETWORK_NAME = $networkName
+    $env:CREDENTIAL_PROXY_ENDPOINT = $credentialProxyEndpoint
+    docker compose -p $ccfProviderName -f $dockerFileDir/ccf/docker-compose.yaml up -d --remove-orphans
 }
-
-#
-# Enable shared credentials if configured.
-#
-$credentialsDir = "credentials/azure"
-if ($shareCredentials)
-{
-    $azHostDir = "$sharedBase/$credentialsDir"
-}
-else
-{
-    $azHostDir = "$personaBase/$credentialsDir"
-}
-
-mkdir -p $azHostDir
 
 #
 # Launch sample environment.
@@ -170,30 +203,21 @@ if ($createContainer)
         $resourceGroup = "$persona-$((New-Guid).ToString().Substring(0, 8))"
     }
 
-    $azVirtualDir = "$($virtualBase)/$credentialsDir"
-    docker create `
+    docker container create `
         --env PERSONA=$persona `
         --env RESOURCE_GROUP=$resourceGroup `
         --env RESOURCE_GROUP_LOCATION=$resourceGroupLocation `
-        --env AZURE_CONFIG_DIR=$azVirtualDir`
+        --env MSI_ENDPOINT="http://$($accessTokenProviderName):8080/token" `
         -v "//var/run/docker.sock:/var/run/docker.sock" `
         -v "$($sharedBase):$virtualBase" `
-        -v "$($azHostDir):$azVirtualDir" `
         -v "$personaBase/$($privateDir):$virtualBase/$privateDir" `
         -v "$personaBase/$($secretDir):$virtualBase/$secretDir" `
-        --network host `
+        --network $networkName `
         --name $containerName `
         -it $imageName
     Write-Log OperationCompleted `
         "Created container '$containerName' to start samples environment for" `
         "'$persona'. Environment will be using resource group '$resourceGroup'."
-}
-
-if (!(Test-Path "$azHostDir/config")) {
-    Write-Log OperationStarted `
-        "Copying initial az configuration for container '$containerName'" `
-        "to '$azHostDir' ('$azVirtualDir')..." 
-    docker cp "$($containerName):/root/.azure/." $azHostDir
 }
 
 Write-Log OperationStarted `
