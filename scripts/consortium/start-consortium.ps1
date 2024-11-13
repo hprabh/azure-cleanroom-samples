@@ -28,6 +28,8 @@ $ccfName = $persona + "-ccf"
 #
 # Create a CCF instance.
 #
+$subscriptionId = az account show --query id --output tsv
+
 if (!(Test-Path -Path "$privateDir/ccfProviderConfig.json"))
 {
     @"
@@ -42,24 +44,50 @@ if (!(Test-Path -Path "$privateDir/ccfProviderConfig.json"))
 "@  | Out-File $privateDir/ccfProviderConfig.json
 }
 
+$PSNativeCommandUseErrorActionPreference = $false
+# TODO : Figure out if we can use script block instead.
+# & {
+#     # Disable $PSNativeCommandUseErrorActionPreference for this scriptblock
+#     $PSNativeCommandUseErrorActionPreference = $false
+# }
 $ccf = (az cleanroom ccf network show `
     --name $ccfName `
     --provider-config $privateDir/ccfProviderConfig.json `
     --provider-client $ccfProviderClient | ConvertFrom-Json)
+$PSNativeCommandUseErrorActionPreference = $true
+
+$operator = "ccf-operator"
+
 if ($null -eq $ccf)
 {
     Write-Log OperationStarted `
         "Creating consortium '$ccfName' in resource group '$resourceGroup'..."
 
+    # Generate ccf-operator identity and encryption public-private key pair.
+    $operatorMemberCert = $secretDir + "/"+ $operator + "_cert.pem"
+    $operatorEncryptionCert = $secretDir + "/"+ $operator + "_enc_pubk.pem"
+
+    if ((Test-Path -Path $operatorMemberCert) -or 
+        (Test-Path -Path $operatorEncryptionCert))
+    {
+        Write-Log Warning `
+            "Identity and/or encryption key pairs for '$operator' already exist."
+    }
+    else
+    {
+        Write-Log Verbose `
+            "Generating identity and encryption key pairs for '$operator' in '$secretDir'..." 
+        az cleanroom governance member keygenerator-sh | bash -s -- --gen-enc-key --name $operator --out $secretDir
+    }
+
     $memberCert = $secretDir + "/"+ $persona + "_cert.pem"
-    $encryptionCert = $secretDir + "/"+ $persona + "_enc_pubk.pem"
 
     @"
 [{
-    "certificate": "$memberCert",
-    "encryptionPublicKey": "$encryptionCert",
+    "certificate": "$operatorMemberCert",
+    "encryptionPublicKey": "$operatorEncryptionCert",
     "memberData": {
-        "identifier": "ccf-operator",
+        "identifier": "$operator",
         "is_operator": true
     }
 },
@@ -71,6 +99,8 @@ if ($null -eq $ccf)
 }]
 "@ | Out-File $privateDir/ccfMembers.json
 
+    Write-Log Verbose `
+        "Creating CCF network '$ccfName' in '$resourceGroup'..." 
     $ccf = (az cleanroom ccf network create `
         --name $ccfName `
         --node-count 1 `
@@ -93,31 +123,67 @@ else {
 
 $response = (curl "$ccfUri/node/network" -k --silent | ConvertFrom-Json)
 # Trimming an extra new-line character added to the cert.
-$serviceCert = $response.service_certificate.TrimEnd("`n")
-$serviceCert | Out-File "$publicDir/${ccfName}_service_cert.pem"
+$serviceCertStr = $response.service_certificate.TrimEnd("`n")
+$serviceCert = "${ccfName}_service_cert.pem"
+$serviceCertStr | Out-File "$publicDir/$serviceCert"
 
-# Deploy client-side containers to interact with the governance service as the first member.
-az cleanroom governance client deploy `
-    --ccf-endpoint $ccfUri `
-    --signing-cert $secretDir/$($persona)_cert.pem `
-    --signing-key $secretDir/$($persona)_privk.pem `
-    --service-cert $publicDir/$($ccfName)_service_cert.pem `
-    --name $cgsClient
+# Deploy client-side containers to interact with the governance service as ccf-operator
+# and accept the invitation.
+& {
+    $persona = $operator
+    $cgsClient = "$persona-client"
+    az cleanroom governance client deploy `
+        --ccf-endpoint $ccfUri `
+        --signing-cert $secretDir/$($persona)_cert.pem `
+        --signing-key $secretDir/$($persona)_privk.pem `
+        --service-cert $publicDir/$serviceCert `
+        --name $cgsClient
 
-# Accept the invitation and becomes an active member in the consortium.
-az cleanroom governance member activate --governance-client $cgsClient
+    az cleanroom governance member activate --governance-client $cgsClient
 
-Write-Log OperationCompleted `
-    "Joined consortium '$ccfUri' and deployed CGS client '$cgsClient'."
+    # Configure the ccf provider client for the operator to take any operator actions like opening
+    # the network.
+    az cleanroom ccf provider configure `
+        --name $ccfProviderClient `
+        --signing-cert "$secretDir/$($operator)_cert.pem" `
+        --signing-key "$secretDir/$($operator)_privk.pem" 
+
+    # Open the network as the operator.
+    Write-Log Verbose `
+        "Opening CCF network '$ccfName'..." 
+    az cleanroom ccf network transition-to-open `
+        --name $ccfName `
+        --provider-config $privateDir/ccfProviderConfig.json `
+        --provider-client $ccfProviderClient
+}
+
+& {
+    # Deploy client-side containers to interact with the governance service as the first member.
+    az cleanroom governance client deploy `
+        --ccf-endpoint $ccfUri `
+        --signing-cert $secretDir/$($persona)_cert.pem `
+        --signing-key $secretDir/$($persona)_privk.pem `
+        --service-cert $publicDir/$($ccfName)_service_cert.pem `
+        --name $cgsClient
+
+    # Accept the invitation and becomes an active member in the consortium.
+    az cleanroom governance member activate --governance-client $cgsClient
+
+    Write-Log OperationCompleted `
+        "Joined consortium '$ccfUri' and deployed CGS client '$cgsClient'."
+}
 
 # Deploy governance service on the CCF instance.
+Write-Log Verbose `
+    "Deploying Clean Room Governance Service to '$ccfName'..." 
 az cleanroom governance service deploy --governance-client $cgsClient
 
 # Share the CCF endpoint details.
 $result = @{
+    name = $ccfName
     url = $ccfUri
     serviceCert = $serviceCert
 }
 $result | Out-File "$ccfEndpoint"
 Write-Log OperationCompleted `
-    "CCF configuration written to '$ccfEndpoint'."
+    "CCF configured. Configuration written to '$ccfEndpoint'."

@@ -101,6 +101,10 @@ $result.ccfsa = Create-Storage-Resources `
     -resourceGroup $resourceGroup `
     -storageAccountName @($ccfsaName) `
     -objectId $objectId
+az storage account update `
+    --name @($ccfsaName) `
+    --resource-group $resourceGroup `
+    --allow-shared-key-access true
 
 $result.maa_endpoint = $maaEndpoint
 
