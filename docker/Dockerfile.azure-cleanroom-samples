@@ -32,7 +32,6 @@ RUN mv azcopy/azcopy /usr/bin
 RUN chmod 755 /usr/bin/azcopy
 # Install az cli extensions.
 RUN az extension add --name confcom -y
-RUN az extension add --name managedccfs -y
 
 FROM samples-base AS install-extension-official
 # Install WHL from official source.

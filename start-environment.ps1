@@ -73,31 +73,52 @@ mkdir -p "$personaBase/$privateDir"
 $secretDir = "secret"
 mkdir -p "$personaBase/$secretDir"
 
-$networkName = "$imageName-network"
-$network = (docker network ls --filter "name=^$networkName$" --format 'json') | ConvertFrom-Json
-if ($null -eq $network)
-{
-    docker network create $networkName
-}
-
 #
 # Launch credential proxy if sharing credentials.
 #
 if ($shareCredentials -or ($persona -eq "operator"))
 {
+    Write-Log OperationStarted `
+        "Setting up credential sharing infrastructure..." 
+
+    # Create a bridge network to host the credential proxy.
+    $networkName = "$imageName-network"
+    $network = (docker network ls --filter "name=^$networkName$" --format 'json') | ConvertFrom-Json
+    if ($null -eq $network)
+    {
+        Write-Log Verbose `
+            "Creating docker network '$networkName'..." 
+        docker network create $networkName
+    }
+
+    # Bring up a credential proxy container.
     $containerName = $accessTokenProviderName
     $container = (docker container ls -a --filter "name=^$containerName$" --format 'json') | ConvertFrom-Json
     if ($null -eq $container)
     {
+        $proxyImage = "workleap/azure-cli-credentials-proxy"
+        Write-Log Verbose `
+            "Creating credential proxy '$containerName' using image '$proxyImage'..." 
         docker container create `
             -p "0:8080" `
             --network $networkName `
             --name $containerName `
-            "workleap/azure-cli-credentials-proxy"
+            $proxyImage
+    }
+    else
+    {
+        Write-Log Warning `
+            "Reusing existing credential proxy container '$($container.Names)'" `
+            "(ID: $($container.ID))."
     }
 
     docker container start $containerName
 
+    # Interactively login to proxy if required.
+    Write-Log Verbose `
+        "Checking validity of Azure access token..." 
+
+    # Override PSNativeCommandUseErrorActionPreference, else script will error out.
     $PSNativeCommandUseErrorActionPreference = $false
     $(docker exec $containerName sh -c "az account get-access-token")
     $PSNativeCommandUseErrorActionPreference = $true
@@ -108,7 +129,12 @@ if ($shareCredentials -or ($persona -eq "operator"))
     }
 
     docker exec $containerName sh -c "az account show"
-    $credentialProxyEndpoint = "http://$($accessTokenProviderName):8080/token"
+
+    # Fetch host port details.
+    $credentialProxyPort = (docker port $accessTokenProviderName 8080).Split(':')[1]
+    $credentialProxyEndpoint = "http://host.docker.internal:$credentialProxyPort/token"
+    Write-Log OperationCompleted `
+        "Credential sharing infrastructure deployed at '$credentialProxyEndpoint'."
 }
 
 #
@@ -122,36 +148,22 @@ if ($persona -eq "litware")
     $dashboardName = "$imageName-telemetry"
     docker compose -p $dashboardName -f $dockerFileDir/telemetry/docker-compose.yaml up -d --remove-orphans
 
-    $dashboardUrl = docker compose -p $dashboardName port "aspire" 18888
-    $dashboardPort = ($dashboardUrl -split ":")[1]
+    $dashboardPort = (docker compose -p $dashboardName port "aspire" 18888).Split(':')[1]
     Write-Log OperationCompleted `
-        "Aspire dashboard deployed at http://localhost:$dashboardPort."
+        "Aspire dashboard deployed at 'http://localhost:$dashboardPort'."
 }
 
 #
-# Launch CCF provider for 'operator' and share az cli configuration directory.
+# Launch CCF provider for 'operator' using shared Azure credentials.
 #
 if ($persona -eq "operator")
 {
-    # $containerName = $ccfProviderName
-    # $container = (docker container ls -a --filter "name=^$containerName$" --format 'json') | ConvertFrom-Json
-    # if ($null -eq $container)
-    # {
-    #     docker container create `
-    #         --env IDENTITY_ENDPOINT="http://$($accessTokenProviderName):8080/token" `
-    #         --env IMDS_ENDPOINT="dummy_required_value" `
-    #         -v "//var/run/docker.sock:/var/run/docker.sock" `
-    #         -p "0:8080" `
-    #         --network $networkName `
-    #         --name $containerName `
-    #         "mcr.microsoft.com/cleanroom/ccf/ccf-provider-client:1.0.11"
-    # }
-
-    # docker container start $containerName
-
-    $env:NETWORK_NAME = $networkName
     $env:CREDENTIAL_PROXY_ENDPOINT = $credentialProxyEndpoint
     docker compose -p $ccfProviderName -f $dockerFileDir/ccf/docker-compose.yaml up -d --remove-orphans
+
+    $providerPort = (docker compose -p $ccfProviderName port "client" 8080).Split(':')[1]
+    Write-Log OperationCompleted `
+        "CCF provider deployed at 'http://localhost:$providerPort'."
 }
 
 #
@@ -207,12 +219,12 @@ if ($createContainer)
         --env PERSONA=$persona `
         --env RESOURCE_GROUP=$resourceGroup `
         --env RESOURCE_GROUP_LOCATION=$resourceGroupLocation `
-        --env MSI_ENDPOINT="http://$($accessTokenProviderName):8080/token" `
+        --env MSI_ENDPOINT=$credentialProxyEndpoint `
         -v "//var/run/docker.sock:/var/run/docker.sock" `
         -v "$($sharedBase):$virtualBase" `
         -v "$personaBase/$($privateDir):$virtualBase/$privateDir" `
         -v "$personaBase/$($secretDir):$virtualBase/$secretDir" `
-        --network $networkName `
+        --network host `
         --name $containerName `
         -it $imageName
     Write-Log OperationCompleted `

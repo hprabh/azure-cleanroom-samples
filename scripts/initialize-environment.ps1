@@ -38,6 +38,7 @@ $result = @{
     dek          = @{}
     sa           = @{}
     oidcsa       = @{}
+    ccfsa        = @{}
     maa_endpoint = ""
 }
 
@@ -93,6 +94,12 @@ $oidcsaName = $($overrides['$OIDC_STORAGE_ACCOUNT_NAME'] ?? "${uniqueString}oidc
 $result.oidcsa = Create-Storage-Resources `
     -resourceGroup $resourceGroup `
     -storageAccountName @($oidcsaName) `
+    -objectId $objectId
+
+$ccfsaName = "${uniqueString}ccfsa"
+$result.ccfsa = Create-Storage-Resources `
+    -resourceGroup $resourceGroup `
+    -storageAccountName @($ccfsaName) `
     -objectId $objectId
 
 $result.maa_endpoint = $maaEndpoint
