@@ -6,7 +6,7 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$contractId,
 
-    [string]$cgsClient = "$env:PERSONA-client",
+    [string]$persona = "$env:PERSONA",
     [string]$resourceGroup = "$env:RESOURCE_GROUP",
 
     [string]$samplesRoot = "/home/samples",
@@ -15,12 +15,12 @@ param(
     [string]$secretDir = "$samplesRoot/demo-resources/secret",
 
     [string]$oidcContainerName = "cgs-oidc",
-    [string]$ccfEndpoint = (Get-Content "$publicDir/ccfEndpoint"),
 
     [string]$secretstoreConfig = "$privateDir/secretstores.config",
     [string]$datastoreConfig = "$privateDir/datastores.config",
     [string]$environmentConfig = "$privateDir/$resourceGroup.generated.json",
-    [string]$contractConfig = "$privateDir/$resourceGroup-$demo.generated.json"
+    [string]$contractConfig = "$privateDir/$resourceGroup-$demo.generated.json",
+    [string]$cgsClient = "azure-cleanroom-samples-governance-client-$persona"
 )
 
 #https://learn.microsoft.com/en-us/powershell/scripting/learn/experimental-features?view=powershell-7.4#psnativecommanderroractionpreference
@@ -59,10 +59,10 @@ $managedIdentity = $contractConfigResult.mi
 $role = "Storage Blob Data Contributor"
 Write-Log Verbose `
     "Assigning permission for '$role' to '$($managedIdentity.name)' on" `
-    "storage account '$($environmentConfigResult.sa.name)'"
+    "storage account '$($environmentConfigResult.datasa.name)'"
 az role assignment create `
     --role "Storage Blob Data Contributor" `
-    --scope $environmentConfigResult.sa.id `
+    --scope $environmentConfigResult.datasa.id `
     --assignee-object-id $managedIdentity.principalId `
     --assignee-principal-type ServicePrincipal
 CheckLastExitCode
@@ -149,16 +149,6 @@ else {
     Write-Log Verbose `
         "Setting up OIDC issuer for tenant '$tenantId' using storage account '$oidcsa'..."
 
-    az storage account update --allow-blob-public-access true `
-        --name $oidcsa
-    Write-Log OperationCompleted `
-        "Enabled public blob access for '$oidcsa'."
-
-    $sleepTime = 30
-    Write-Log Verbose `
-        "Waiting for $sleepTime seconds for public blob access to be enabled..."
-    Start-Sleep -Seconds $sleepTime
-
     Write-Log Verbose `
         "Creating public access blob container '$oidcContainerName' in '$oidcsa'..."
     az storage container create `
@@ -199,7 +189,8 @@ else {
 
     Write-Log Verbose `
         "Uploading jwks to container '$oidcContainerName' in '$oidcsa'..."
-    $url = "$ccfEndpoint/app/oidc/keys"
+    $ccfEndpoint = (Get-Content "$publicDir/ccfEndpoint.json" | ConvertFrom-Json)
+    $url = "$($ccfEndpoint.url)/app/oidc/keys"
     curl -sL -k $url | jq | Out-File $privateDir/jwks.json
     az storage blob upload `
         --container-name $oidcContainerName `

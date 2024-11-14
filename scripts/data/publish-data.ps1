@@ -31,7 +31,7 @@ Test-AzureAccessToken
 if ($sa -eq "")
 {
     $initResult = Get-Content $environmentConfig | ConvertFrom-Json
-    $sa = $initResult.sa.id
+    $sa = $initResult.datasa.id
 }
 
 Write-Log OperationStarted `
