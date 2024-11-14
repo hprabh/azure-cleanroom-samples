@@ -7,8 +7,7 @@ function Test-AzureAccessToken {
 
     Write-Log OperationStarted `
         "Verifying Azure access token..."
-    az account show --query user
-    $token = $(az account get-access-token) | ConvertFrom-Json
+    $token = (az account get-access-token | ConvertFrom-Json)
     if ([datetime]$token.expiresOn -le [datetime]::Now)
     {
         Write-Log Error `

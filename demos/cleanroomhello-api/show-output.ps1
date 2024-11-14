@@ -18,7 +18,7 @@ param(
     [string]$demo = "$(Split-Path $PSScriptRoot -Leaf)",
     [string]$datasinkPath = "$demosRoot/$demo/datasink/$persona",
 
-    [string]$cgsClient = "$persona-client",
+    [string]$cgsClient = "azure-cleanroom-samples-governance-client-$persona",
     [switch]$interactive
 )
 

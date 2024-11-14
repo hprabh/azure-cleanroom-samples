@@ -33,7 +33,7 @@ Write-Log OperationStarted `
 az cleanroom config set-logging `
     --cleanroom-config $contractConfigResult.contractFragment `
     --datastore-config $datastoreConfig `
-    --storage-account $environmentConfigResult.sa.id `
+    --storage-account $environmentConfigResult.datasa.id `
     --identity "$persona-identity" `
     --secretstore-config $secretStoreConfig `
     --datastore-secret-store $persona-local-store `
@@ -46,7 +46,7 @@ Write-Log OperationCompleted `
 az cleanroom config set-telemetry `
     --cleanroom-config $contractConfigResult.contractFragment `
     --datastore-config $datastoreConfig `
-    --storage-account $environmentConfigResult.sa.id `
+    --storage-account $environmentConfigResult.datasa.id `
     --identity "$persona-identity" `
     --secretstore-config $secretStoreConfig `
     --datastore-secret-store $persona-local-store `

@@ -5,13 +5,14 @@ param(
 
     [string[]]$collaborators = ('litware', 'fabrikam', 'contosso'),
 
-    [string]$cgsClient = "$env:PERSONA-client",
+    [string]$persona = "$env:PERSONA",
 
     [string]$samplesRoot = "/home/samples",
     [string]$publicDir = "$samplesRoot/demo-resources/public",
 
     [string]$contractId = "collab-$demo-$((New-Guid).ToString().Substring(0, 8))",
-    [string]$cleanroomConfig = "$publicDir/$contractId-cleanroom.config"
+    [string]$cleanroomConfig = "$publicDir/$contractId-cleanroom.config",
+    [string]$cgsClient = "azure-cleanroom-samples-governance-client-$persona"
 )
 
 #https://learn.microsoft.com/en-us/powershell/scripting/learn/experimental-features?view=powershell-7.4#psnativecommanderroractionpreference

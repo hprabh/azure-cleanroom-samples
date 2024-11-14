@@ -5,11 +5,12 @@ param(
     [ValidateSet("cached", "cached-debug", "generate", "generate-debug", "allow-all")]
     [string]$securityPolicy = "cached-debug",
 
-    [string]$cgsClient = "$env:PERSONA-client",
+    [string]$persona = "$env:PERSONA",
 
     [string]$samplesRoot = "/home/samples",
     [string]$privateDir = "$samplesRoot/demo-resources/private",
-    [string]$artefactsDir = "$privateDir/$contractId-artefacts"
+    [string]$artefactsDir = "$privateDir/$contractId-artefacts",
+    [string]$cgsClient = "azure-cleanroom-samples-governance-client-$persona"
 )
 
 #https://learn.microsoft.com/en-us/powershell/scripting/learn/experimental-features?view=powershell-7.4#psnativecommanderroractionpreference

@@ -137,7 +137,7 @@ $persona = "<persona>" # ("litware", "fabrikam", "contosso", "client", "operator
   1. Add the CleanRoom Azure CLI extension using:
 
       ```powershell
-      az extension add --source https://cleanroomazcli.blob.core.windows.net/azcli/cleanroom-0.0.6-py2.py3-none-any.whl -y --allow-preview true
+      az extension add --source https://cleanroomazcli.blob.core.windows.net/azcli/cleanroom-0.0.3-py2.py3-none-any.whl -y --allow-preview true
       ```
 
   1. Set the environment variable "PERSONA" to one of the following parties - "litware", "fabrikam", "contosso", "client", "operator"
@@ -388,12 +388,12 @@ With the above steps the consortium creation that drives the creation and execut
 Sensitive data that any of the parties want to bring into the collaboration needs to be encrypted in a manner that ensures the key to decrypt this data will only be released to the clean room environment. 
 
 ## KEK-DEK based encryption approach
-The samples follow an envelope encryption model for encryption of data. For the encryption of the data, a symmetric **_Data Encryption Key_** (**DEK**) is generated. An asymmetric key, called the *Key Encryption Key* (KEK), is generated subsequently to wrap the DEK. The wrapped DEKs are stored in a Key Vault as a secret and the KEK is imported into an MHSM/Premium Key Vault behind a secure key release (SKR) policy. Within the clean room, the wrapped DEK is read from the Key Vault and the KEK is retrieved from the MHSM/Premium Key Vault following the secure key release [protocol](https://learn.microsoft.com/en-us/azure/confidential-computing/concept-skr-attestation). The DEKs are unwrapped within the cleanroom and then used to access the storage containers.
+The samples follow an envelope encryption model for encryption of data. For the encryption of the data, a symmetric **_Data Encryption Key_** (**DEK**) is generated. An asymmetric key, called the *Key Encryption Key* (KEK), is generated subsequently to wrap the DEK. The wrapped DEKs are stored in a Key Vault as a secret and the KEK is imported into an MHSM/Premium Key Vault behind a secure key release (SKR) policy. Within the clean room, the wrapped DEK is read from the Key Vault and the KEK is retrieved from the MHSM/Premium Key Vault following the secure key release [protocol](https://learn.microsoft.com/en-us/azure/confidential-computing/skr-flow-confidential-containers-azure-container-instance). The DEKs are unwrapped within the cleanroom and then used to access the storage containers.
 
 ## Encrypt and upload data (fabrikam, contosso)
 It is assumed that the collaborators have had out-of-band communication and have agreed on the data sets that will be shared. In these samples, the protected data is in the form of one or more files in one or more directories at each collaborators end.
 
-These dataset(s) in the form of files are encrypted using the [KEK-DEK](#kek-dek-based-encryption-approach) approach and uploaded into the the storage account created as part of [initializing the sample environment](#initializing-the-environment). Each directory in the source dataset would correspond to one Azure Blob storage container, and all files in the directory are uploaded as blobs to Azure Storage using specified encryption mode - [client-side encryption]() / server-side encryption using [customer provided key](https://learn.microsoft.com/azure/storage/blobs/encryption-customer-provided-keys). Only one symmetric key (DEK) is created per directory (blob storage container).
+These dataset(s) in the form of files are encrypted using the [KEK-DEK](#kek-dek-based-encryption-approach) approach and uploaded into the the storage account created as part of [initializing the sample environment](#initializing-the-environment). Each directory in the source dataset would correspond to one Azure Blob storage container, and all files in the directory are uploaded as blobs to Azure Storage using specified encryption mode - client-side encryption <!-- TODO: Add link to explanation of CSE. -->/ server-side encryption using [customer provided key](https://learn.microsoft.com/azure/storage/blobs/encryption-customer-provided-keys). Only one symmetric key (DEK) is created per directory (blob storage container).
 
 ```mermaid
 sequenceDiagram
@@ -575,6 +575,7 @@ $contractId = "<contractId>" # E.g. "collab-cleanroomhello-job-8a106fb6"
 ./scripts/contract/confirm-contract.ps1 -contractId $contractId -demo $demo
 ```
 
+<!--TODO (phanic): Add note on documents being proposed as part of this.-->
 
 ## Propose ARM template, CCE policy and log collection (operator)
 Once the contract is accepted by all the collaborators, the _operator_ generates the artefacts required for deploying a _*CCR*_ instance for the contained clean room specification using Azure Confidential Container Instances ([_C-ACI_](https://learn.microsoft.com/azure/container-instances/container-instances-confidential-overview)) and proposes them to the consortium.
@@ -615,6 +616,7 @@ Once the *ARM template* and *CCE policy* proposals are available in the consorti
 ./scripts/contract/confirm-deployment-artefacts.ps1 -contractId $contractId
 ```
 
+<!--TODO (phanic): Add note on documents being accepted as part of this.-->
 
 ## Configure resource access for clean room (litware, fabrikam, contosso)
 All the collaborating parties need to give access to the clean room so that the clean room environment can access resources in their respective tenants.
@@ -687,6 +689,7 @@ The application specific output can be viewed by running the following command:
 pwsh ./demos/$demo/show-output.ps1 -contractId $contractId
 ```
 
+<!--TODO (phanic): Add note on how to consume output for every application, either here or as comments in PS1.-->
 
 # Governing the cleanroom
 ## Viewing telemetry (litware)

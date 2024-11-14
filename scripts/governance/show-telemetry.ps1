@@ -66,14 +66,22 @@ if ($telemetryConfigured)
         "Downloaded application telemetry to '$dataDir'."
 
     # Display application logs.
-    Write-Log Warning `
-        "$([environment]::NewLine)Application logs:"
-    Write-Log Verbose `
-        "-----BEGIN OUTPUT-----" `
-        "$($PSStyle.Reset)"
-    cat $dataDir/**/demoapp-$demo.log
-    Write-Log Verbose `
-        "-----END OUTPUT-----"
+    if (Test-Path $dataDir/**/demoapp-$demo.log)
+    {
+        Write-Log Warning `
+            "$([environment]::NewLine)Application logs:"
+        Write-Log Verbose `
+            "-----BEGIN OUTPUT-----" `
+            "$($PSStyle.Reset)"
+        cat $dataDir/**/demoapp-$demo.log
+        Write-Log Verbose `
+            "-----END OUTPUT-----"
+    }
+    else
+    {
+        Write-Log Warning `
+            "$([environment]::NewLine)No application logs are available."
+    }
 
     # Display dashboard details.
     $dashboardUrl = docker compose -p $dashboardName port "aspire" 18888

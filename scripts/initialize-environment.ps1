@@ -36,7 +36,7 @@ az group create --location $resourceGroupLocation --name $resourceGroup --tags $
 $result = @{
     kek          = @{}
     dek          = @{}
-    sa           = @{}
+    datasa       = @{}
     oidcsa       = @{}
     ccfsa        = @{}
     maa_endpoint = ""
@@ -84,27 +84,35 @@ else {
     $result.dek.kv = $result.kek.kv
 }
 
-$saName = $($overrides['$STORAGE_ACCOUNT_NAME'] ?? "${uniqueString}sa")
-$result.sa = Create-Storage-Resources `
+$dataStorageAccount = $($overrides['$DATA_STORAGE_ACCOUNT_NAME'] ?? "datasa${uniqueString}")
+$result.datasa = Create-Storage-Resources `
     -resourceGroup $resourceGroup `
-    -storageAccountName @($saName) `
+    -storageAccountName @($dataStorageAccount) `
     -objectId $objectId
 
-$oidcsaName = $($overrides['$OIDC_STORAGE_ACCOUNT_NAME'] ?? "${uniqueString}oidcsa")
+$oidcStorageAccount = $($overrides['$OIDC_STORAGE_ACCOUNT_NAME'] ?? "oidcsa${uniqueString}")
 $result.oidcsa = Create-Storage-Resources `
     -resourceGroup $resourceGroup `
-    -storageAccountName @($oidcsaName) `
-    -objectId $objectId
-
-$ccfsaName = "${uniqueString}ccfsa"
-$result.ccfsa = Create-Storage-Resources `
-    -resourceGroup $resourceGroup `
-    -storageAccountName @($ccfsaName) `
+    -storageAccountName @($oidcStorageAccount) `
     -objectId $objectId
 az storage account update `
-    --name @($ccfsaName) `
+    --name $oidcStorageAccount `
+    --resource-group $resourceGroup `
+    --allow-blob-public-access true
+Write-Log OperationCompleted `
+    "Enabled public blob access for '$oidcStorageAccount'."
+
+$ccfStorageAccount = $($overrides['$CCF_STORAGE_ACCOUNT_NAME'] ?? "ccfsa${uniqueString}")
+$result.ccfsa = Create-Storage-Resources `
+    -resourceGroup $resourceGroup `
+    -storageAccountName @($ccfStorageAccount) `
+    -objectId $objectId
+az storage account update `
+    --name $ccfStorageAccount `
     --resource-group $resourceGroup `
     --allow-shared-key-access true
+Write-Log OperationCompleted `
+    "Enabled shared key access for '$ccfStorageAccount'."
 
 $result.maa_endpoint = $maaEndpoint
 
