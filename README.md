@@ -137,7 +137,7 @@ $persona = "<persona>" # ("litware", "fabrikam", "contosso", "client", "operator
   1. Add the CleanRoom Azure CLI extension using:
 
       ```powershell
-      az extension add --source https://cleanroomazcli.blob.core.windows.net/azcli/cleanroom-0.0.3-py2.py3-none-any.whl -y --allow-preview true
+      az extension add --source https://cleanroomazcli.blob.core.windows.net/azcli/cleanroom-0.0.6-py2.py3-none-any.whl -y --allow-preview true
       ```
 
   1. Set the environment variable "PERSONA" to one of the following parties - "litware", "fabrikam", "contosso", "client", "operator"
